@@ -306,13 +306,12 @@ app.delete('/api/books/:id', auth, async (req, res) => {
 
 // Get all eBooks
 app.get('/api/ebooks', async (req, res) => {
-    // Get all books (with error handling)
     try {
-      const books = await Book.find();
-      res.json({ books });
+      const ebooks = await Ebook.find();
+      res.json({ ebooks });
     } catch (err) {
-      console.error('Error fetching books:', err);
-      res.status(500).json({ success: false, error: 'Failed to fetch books', details: err.message });
+      console.error('Error fetching ebooks:', err);
+      res.status(500).json({ success: false, error: 'Failed to fetch ebooks', details: err.message });
     }
 });
 
@@ -440,6 +439,75 @@ app.get('/api/borrow', async (req, res) => {
   } catch (err) {
     console.error('Error fetching all borrow records:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch borrow records', details: err.message });
+  }
+});
+
+// ===== TEACHER ENDPOINTS =====
+
+// Get all teachers
+app.get('/api/teachers', auth, async (req, res) => {
+  try {
+    const teachers = await User.find({ role: 'teacher' }).select('-password');
+    res.json({ teachers });
+  } catch (err) {
+    console.error('Error fetching teachers:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch teachers', details: err.message });
+  }
+});
+
+// Get teacher by ID
+app.get('/api/teachers/:id', auth, async (req, res) => {
+  try {
+    const teacher = await User.findById(req.params.id).select('-password');
+    if (!teacher || teacher.role !== 'teacher') {
+      return res.status(400).json({ success: false, error: 'Teacher not found' });
+    }
+    res.json({ teacher });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch teacher', details: err.message });
+  }
+});
+
+// Update teacher
+app.put('/api/teachers/:id', auth, async (req, res) => {
+  try {
+    const { name, email, phone, address, schoolId } = req.body;
+
+    // Check if email already exists (excluding current teacher)
+    const existing = await User.findOne({ email, _id: { $ne: req.params.id } });
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'Email already in use' });
+    }
+
+    const updates = { name, email, phone, address };
+    if (schoolId) updates.schoolId = schoolId;
+
+    const teacher = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!teacher) {
+      return res.status(400).json({ success: false, error: 'Teacher not found' });
+    }
+
+    res.json({ success: true, teacher });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update teacher', details: err.message });
+  }
+});
+
+// Delete teacher
+app.delete('/api/teachers/:id', auth, async (req, res) => {
+  try {
+    const teacher = await User.findByIdAndDelete(req.params.id);
+    if (!teacher) {
+      return res.status(400).json({ success: false, error: 'Teacher not found' });
+    }
+    res.json({ success: true, message: 'Teacher deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to delete teacher', details: err.message });
   }
 });
 
