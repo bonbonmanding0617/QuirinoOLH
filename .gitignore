@@ -6,3 +6,9 @@ node_modules/
 .env.*
 server-out.log
 server-err.log
+response*.json
+payload*.json
+*response.json
+get_*.json
+delete_response.json
+*.env
