@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
+    ,"fetch-secret": "node ./scripts/fetch-secret.js"
+    ,"check-secrets": "node ./scripts/find-secrets.js"
   },
   "keywords": [
     "library",
@@ -21,7 +23,11 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
     "mongodb": "4.1",
-    "mongoose": "^7.0.0"
+    "mongoose": "^7.0.0",
+    "minimist": "^1.2.8",
+    "@azure/identity": "^3.0.0",
+    "@azure/keyvault-secrets": "^4.3.0",
+    "@aws-sdk/client-secrets-manager": "^3.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
