@@ -187,6 +187,7 @@
                 <li><a href="admin-teachers.html">👨‍🏫 Teacher Management</a></li>
                 <li><a href="admin-books.html">📚 Books Management</a></li>
                 <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-approvals.html">✅ Approval Requests</a></li>
                 <li><a href="admin-analytics.html">📈 Analytics</a></li>
                 <li><a href="admin-profile.html">👤 My Profile</a></li>
                 <li><a href="admin-settings.html">⚙️ Settings</a></li>
@@ -337,6 +338,34 @@
         </div>
     </div>
 
+    <!-- Request Delete Modal -->
+    <div id="requestDeleteModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Request to Delete Student</h3>
+                <button class="close-btn" onclick="closeRequestDeleteModal()">&times;</button>
+            </div>
+            <form onsubmit="handleRequestDelete(event)">
+                <input type="hidden" id="delete-resource-id">
+                <input type="hidden" id="delete-resource-type" value="student">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Resource Name</label>
+                        <input type="text" id="delete-resource-title" disabled style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="delete-reason">Reason for Deletion *</label>
+                        <textarea id="delete-reason" placeholder="Explain why this student needs to be deleted..." style="min-height: 100px;" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRequestDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Request Deletion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="../js/script.js"></script>
     <script>
         let currentUser = null;
@@ -398,6 +427,11 @@
                 const schoolId = student.schoolId || (student.school_id || '');
                 const id = student.id || student._id || '';
 
+                const isAdmin = currentUser.role === 'admin';
+                const deleteButton = isAdmin
+                    ? `<button class="btn btn-small btn-outline" onclick="deleteStudent('${id}')">Delete</button>`
+                    : `<button class="btn btn-small btn-warning" onclick="openRequestDeleteModal('${id}', 'student', '${name}')">Request Delete</button>`;
+
                 return `
                 <tr>
                     <td><strong>${schoolId}</strong></td>
@@ -409,7 +443,7 @@
                         <div class="action-buttons">
                             <button class="btn btn-small btn-primary" onclick="openEditModal('${id}')">Edit</button>
                             <button class="btn btn-small btn-secondary" onclick="viewBorrowRecords('${id}')">Records</button>
-                            <button class="btn btn-small btn-outline" onclick="deleteStudent('${id}')">Delete</button>
+                            ${deleteButton}
                         </div>
                     </td>
                 </tr>
@@ -549,43 +583,66 @@
             if (!student) student = getUserById(studentId);
             if (!student) return;
 
-            const records = getStudentBorrowRecords(studentId);
             const displayName = student.name || (student.firstName ? (student.firstName + ' ' + (student.lastName || '')) : (student.email || 'Student'));
             document.getElementById('student-name-header').textContent = displayName + ' - Borrow Records';
 
             const container = document.getElementById('borrow-records-container');
+            container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">Loading borrow records...</p>';
 
-            if (records.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No borrow records</p>';
+            // Try to fetch from API first
+            const token = localStorage.getItem('token');
+            if (token) {
+                axios.get(`http://localhost:3001/api/borrow/student/${studentId}`, {
+                    headers: { Authorization: 'Bearer ' + token }
+                })
+                    .then(res => {
+                        displayBorrowRecords(res.data.records || []);
+                    })
+                    .catch(err => {
+                        console.warn('Failed to load borrow records from API, falling back to localStorage', err);
+                        const records = getStudentBorrowRecords(studentId);
+                        displayBorrowRecords(records);
+                    });
             } else {
-                const html = records.map(record => {
-                    const book = getBookById(record.bookId);
-                    const isOverdue = record.status === 'borrowed' && isOverdue(record.dueDate);
-
-                    return `
-                        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                                <strong>${book ? book.title : 'Unknown Book'}</strong>
-                                <span class="badge badge-${record.status === 'returned' ? 'success' : (isOverdue ? 'danger' : 'info')}">
-                                    ${record.status === 'returned' ? '✓ Returned' : (isOverdue ? '⚠ Overdue' : '📖 Borrowed')}
-                                </span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; font-size: 0.9rem; margin-bottom: 1rem;">
-                                <div><label>Borrowed:</label> ${formatDate(record.borrowDate)}</div>
-                                <div><label>Due:</label> ${formatDate(record.dueDate)}</div>
-                                ${record.status === 'returned' ? `<div><label>Returned:</label> ${formatDate(record.returnDate)}</div>` : ''}
-                            </div>
-                            ${record.status === 'borrowed' && isOverdue ? `
-                                <button class="btn btn-small btn-danger" onclick="forceReturnBook('${record.id}')">⚠️ Force Return</button>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('');
-
-                container.innerHTML = html;
+                // Fallback to localStorage
+                const records = getStudentBorrowRecords(studentId);
+                displayBorrowRecords(records);
             }
 
-            document.getElementById('borrowRecordsModal').classList.add('active');
+            function displayBorrowRecords(records) {
+                if (records.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No borrow records</p>';
+                } else {
+                    const html = records.map(record => {
+                        const book = getBookById(record.bookId);
+                        const bookTitle = book ? book.title : (record.bookTitle || 'Unknown Book');
+                        const isOverdue = record.status === 'borrowed' && isOverdue(record.dueDate);
+
+                        return `
+                            <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                                    <strong>${bookTitle}</strong>
+                                    <span class="badge badge-${record.status === 'returned' ? 'success' : (isOverdue ? 'danger' : 'info')}">
+                                        ${record.status === 'returned' ? '✓ Returned' : (isOverdue ? '⚠ Overdue' : '📖 Borrowed')}
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; font-size: 0.9rem; margin-bottom: 1rem;">
+                                    <div><label>Borrowed:</label> ${formatDate(record.borrowDate)}</div>
+                                    <div><label>Due:</label> ${formatDate(record.dueDate)}</div>
+                                    ${record.status === 'returned' ? `<div><label>Returned:</label> ${formatDate(record.returnDate)}</div>` : ''}
+                                </div>
+                                ${record.status === 'borrowed' && isOverdue ? `
+                                    <button class="btn btn-small btn-danger" onclick="forceReturnBook('${record.id || record._id}')">⚠️ Force Return</button>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                    container.innerHTML = html;
+                }
+
+                document.getElementById('borrowRecordsModal').classList.add('active');
+            }
         }
 
         // Close borrow records modal
@@ -597,17 +654,81 @@
         function forceReturnBook(borrowRecordId) {
             if (!confirm('Issue a force return for this book?')) return;
 
-            const result = window.forceReturnBook(borrowRecordId);
-            if (result.success) {
-                showNotification(result.message, 'success');
-                // Refresh the records
-                const record = getBorrowRecordById(borrowRecordId);
-                if (record) {
-                    viewBorrowRecords(record.studentId);
-                }
-            } else {
-                showNotification(result.message, 'danger');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showNotification('Not authenticated', 'danger');
+                return;
             }
+
+            axios.put(`http://localhost:3001/api/borrow/${borrowRecordId}/return`, {}, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Book returned successfully!', 'success');
+                        // Refresh the records by finding the student ID from the current modal
+                        const modal = document.getElementById('borrowRecordsModal');
+                        if (modal.classList.contains('active')) {
+                            // Reload all students to get fresh data
+                            loadStudents();
+                            // Close and reopen modal to refresh
+                            setTimeout(() => {
+                                closeBorrowModal();
+                            }, 1000);
+                        }
+                    } else {
+                        showNotification(res.data.error || 'Failed to return book', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
+        }
+
+        // Open request delete modal
+        function openRequestDeleteModal(resourceId, resourceType, resourceTitle) {
+            document.getElementById('delete-resource-id').value = resourceId;
+            document.getElementById('delete-resource-type').value = resourceType;
+            document.getElementById('delete-resource-title').value = resourceTitle;
+            document.getElementById('delete-reason').value = '';
+            document.getElementById('requestDeleteModal').classList.add('active');
+        }
+
+        // Close request delete modal
+        function closeRequestDeleteModal() {
+            document.getElementById('requestDeleteModal').classList.remove('active');
+        }
+
+        // Handle request delete submission
+        function handleRequestDelete(event) {
+            event.preventDefault();
+
+            const resourceId = document.getElementById('delete-resource-id').value;
+            const resourceType = document.getElementById('delete-resource-type').value;
+            const resourceTitle = document.getElementById('delete-resource-title').value;
+            const reason = document.getElementById('delete-reason').value;
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/change-requests', {
+                resourceId,
+                resourceType,
+                resourceTitle,
+                changeType: 'delete',
+                proposedData: { deleteReason: reason }
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Delete request submitted successfully! Waiting for admin approval.', 'success');
+                        closeRequestDeleteModal();
+                    } else {
+                        showNotification(res.data.error || 'Failed to submit request', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
         }
 
         // Logout
@@ -622,10 +743,12 @@
             const modal = document.getElementById('studentModal');
             const editModal = document.getElementById('editStudentModal');
             const borrowModal = document.getElementById('borrowRecordsModal');
+            const requestDeleteModal = document.getElementById('requestDeleteModal');
 
             if (event.target === modal) closeModal();
             if (event.target === editModal) closeEditModal();
             if (event.target === borrowModal) closeBorrowModal();
+            if (event.target === requestDeleteModal) closeRequestDeleteModal();
         };
     </script>
 </body>

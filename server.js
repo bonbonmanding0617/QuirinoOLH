@@ -117,6 +117,25 @@ const borrowSchema = new mongoose.Schema({
 });
 const BorrowRecord = mongoose.model('BorrowRecord', borrowSchema);
 
+// Change Request schema (for teacher requests to edit books/ebooks)
+const changeRequestSchema = new mongoose.Schema({
+  requesterId: String,
+  requesterName: String,
+  resourceType: { type: String, enum: ['book', 'ebook'] },
+  resourceId: String,
+  resourceTitle: String,
+  changeType: { type: String, enum: ['create', 'update', 'delete'] },
+  currentData: mongoose.Schema.Types.Mixed,
+  proposedData: mongoose.Schema.Types.Mixed,
+  reason: String,
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  reviewedBy: String,
+  reviewNotes: String,
+  createdAt: { type: Date, default: Date.now },
+  reviewedAt: Date
+});
+const ChangeRequest = mongoose.model('ChangeRequest', changeRequestSchema);
+
 // ===== AUTH MIDDLEWARE =====
 function auth(req, res, next) {
   const header = req.headers.authorization;
@@ -424,7 +443,19 @@ app.put('/api/borrow/:id/return', auth, async (req, res) => {
 app.get('/api/borrow/student/:studentId', async (req, res) => {
   try {
     const records = await BorrowRecord.find({ studentId: req.params.studentId });
-    res.json({ records });
+    
+    // Enrich records with book titles
+    const enrichedRecords = await Promise.all(
+      records.map(async (record) => {
+        const book = await Book.findById(record.bookId);
+        return {
+          ...record.toObject(),
+          bookTitle: book ? book.title : 'Unknown Book'
+        };
+      })
+    );
+    
+    res.json({ records: enrichedRecords });
   } catch (err) {
     console.error('Error fetching student borrow records:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch borrow records', details: err.message });
@@ -435,7 +466,19 @@ app.get('/api/borrow/student/:studentId', async (req, res) => {
 app.get('/api/borrow', async (req, res) => {
   try {
     const records = await BorrowRecord.find();
-    res.json({ records });
+    
+    // Enrich records with book titles
+    const enrichedRecords = await Promise.all(
+      records.map(async (record) => {
+        const book = await Book.findById(record.bookId);
+        return {
+          ...record.toObject(),
+          bookTitle: book ? book.title : 'Unknown Book'
+        };
+      })
+    );
+    
+    res.json({ records: enrichedRecords });
   } catch (err) {
     console.error('Error fetching all borrow records:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch borrow records', details: err.message });
@@ -511,6 +554,152 @@ app.delete('/api/teachers/:id', auth, async (req, res) => {
   }
 });
 
+// ===== CHANGE REQUEST ENDPOINTS (for teacher approval workflow) =====
+
+// Create change request (teacher requesting book/ebook modification)
+app.post('/api/change-requests', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'teacher') {
+      return res.status(403).json({ success: false, error: 'Only teachers can request changes' });
+    }
+
+    const { resourceType, resourceId, resourceTitle, changeType, currentData, proposedData, reason } = req.body;
+
+    const changeRequest = new ChangeRequest({
+      requesterId: user._id,
+      requesterName: user.name,
+      resourceType,
+      resourceId,
+      resourceTitle,
+      changeType,
+      currentData,
+      proposedData,
+      reason
+    });
+
+    const saved = await changeRequest.save();
+    res.json({ success: true, request: saved });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to create change request', details: err.message });
+  }
+});
+
+// Get pending change requests (admin only)
+app.get('/api/change-requests/pending', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Only admins can view change requests' });
+    }
+
+    const requests = await ChangeRequest.find({ status: 'pending' }).sort({ createdAt: -1 });
+    res.json({ requests });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch requests', details: err.message });
+  }
+});
+
+// Get all change requests (admin only)
+app.get('/api/change-requests', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Only admins can view change requests' });
+    }
+
+    const requests = await ChangeRequest.find().sort({ createdAt: -1 });
+    res.json({ requests });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch requests', details: err.message });
+  }
+});
+
+// Approve change request (admin only)
+app.put('/api/change-requests/:id/approve', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Only admins can approve requests' });
+    }
+
+    const request = await ChangeRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(400).json({ success: false, error: 'Request not found' });
+    }
+
+    const { reviewNotes } = req.body;
+
+    // Apply the change to the actual resource
+    if (request.changeType === 'delete') {
+      // Handle deletion
+      if (request.resourceType === 'book') {
+        await Book.findByIdAndDelete(request.resourceId);
+      } else if (request.resourceType === 'ebook') {
+        await Ebook.findByIdAndDelete(request.resourceId);
+      } else if (request.resourceType === 'student') {
+        await User.findByIdAndDelete(request.resourceId);
+      }
+    } else {
+      // Handle updates
+      if (request.resourceType === 'book') {
+        await Book.findByIdAndUpdate(request.resourceId, request.proposedData);
+      } else if (request.resourceType === 'ebook') {
+        await Ebook.findByIdAndUpdate(request.resourceId, request.proposedData);
+      } else if (request.resourceType === 'student') {
+        await User.findByIdAndUpdate(request.resourceId, request.proposedData);
+      }
+    }
+
+    // Update the change request
+    request.status = 'approved';
+    request.reviewedBy = user._id;
+    request.reviewNotes = reviewNotes || '';
+    request.reviewedAt = new Date();
+    await request.save();
+
+    res.json({ success: true, request });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to approve request', details: err.message });
+  }
+});
+
+// Reject change request (admin only)
+app.put('/api/change-requests/:id/reject', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Only admins can reject requests' });
+    }
+
+    const request = await ChangeRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(400).json({ success: false, error: 'Request not found' });
+    }
+
+    const { reviewNotes } = req.body;
+
+    request.status = 'rejected';
+    request.reviewedBy = user._id;
+    request.reviewNotes = reviewNotes || '';
+    request.reviewedAt = new Date();
+    await request.save();
+
+    res.json({ success: true, request });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to reject request', details: err.message });
+  }
+});
+
 // ===== START SERVER =====
 const PORT = process.env.PORT || 3001;
+
+// Serve static files from the root directory
+app.use(express.static(__dirname));
+
+// Root route - redirect to login page
+app.get('/', (req, res) => {
+  res.redirect('/pages/admin-login.html');
+});
+
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on http://localhost:${PORT}`));

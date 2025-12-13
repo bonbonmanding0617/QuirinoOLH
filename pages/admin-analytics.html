@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - Quirino Online Library Hub</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .admin-layout {
             display: grid;
@@ -57,6 +58,19 @@
             border-radius: 10px;
             box-shadow: var(--shadow);
             margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
         }
 
         .analytics-table {
@@ -180,6 +194,7 @@
                 <li><a href="admin-teachers.html">👨‍🏫 Teacher Management</a></li>
                 <li><a href="admin-books.html">📚 Books Management</a></li>
                 <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-approvals.html">✅ Approval Requests</a></li>
                 <li><a href="admin-analytics.html" class="active">📈 Analytics</a></li>
                 <li><a href="admin-profile.html">👤 My Profile</a></li>
                 <li><a href="admin-settings.html">⚙️ Settings</a></li>
@@ -207,6 +222,39 @@
                 <div class="stat-box">
                     <div class="stat-value" id="overdue-borrows">0</div>
                     <div class="stat-label">Overdue Borrows</div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="analytics-panel">
+                    <h3>📊 Monthly Borrowing Activity</h3>
+                    <div class="chart-container">
+                        <canvas id="borrowing-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-panel">
+                    <h3>📈 Borrow Status Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="status-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="analytics-panel">
+                    <h3>📚 Book Category Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-panel">
+                    <h3>🎯 Top 5 Categories</h3>
+                    <div class="chart-container">
+                        <canvas id="top-categories-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -295,10 +343,17 @@
                     // Calculate top students and books from records
                     const studentBorrows = {};
                     const bookBorrows = {};
+                    const monthlyBorrows = {};
+                    const categoryBorrows = {};
                     
                     records.forEach(record => {
                         studentBorrows[record.studentId] = (studentBorrows[record.studentId] || 0) + 1;
                         bookBorrows[record.bookId] = (bookBorrows[record.bookId] || 0) + 1;
+                        
+                        // Monthly data
+                        const date = new Date(record.borrowDate);
+                        const monthKey = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+                        monthlyBorrows[monthKey] = (monthlyBorrows[monthKey] || 0) + 1;
                     });
 
                     const topStudents = Object.entries(studentBorrows)
@@ -314,11 +369,198 @@
                     loadTopStudents(topStudents);
                     loadTopBooks(topBooks);
                     loadRecentActivity(records);
+                    
+                    // Initialize charts
+                    initBorrowingChart(monthlyBorrows);
+                    initStatusChart(totalReturns, activeBorrows, overdueBorrows);
+                    
+                    // Load books to get category data
+                    return axios.get('http://localhost:3001/api/books', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                })
+                .then(res => {
+                    const books = res.data.books;
+                    const categoryBorrows = {};
+                    
+                    // Count borrows by category from books
+                    books.forEach(book => {
+                        const category = book.category || 'Uncategorized';
+                        categoryBorrows[category] = (categoryBorrows[category] || 0) + (book.quantity - book.available);
+                    });
+                    
+                    initCategoryChart(categoryBorrows);
+                    initTopCategoriesChart(categoryBorrows);
                 })
                 .catch(err => {
                     console.log('Failed to load analytics:', err);
                     alert('Failed to load analytics data');
                 });
+        }
+
+        // Initialize borrowing trend chart (bar)
+        function initBorrowingChart(monthlyBorrows) {
+            const ctx = document.getElementById('borrowing-chart').getContext('2d');
+            
+            const months = Object.keys(monthlyBorrows).sort();
+            const data = months.map(m => monthlyBorrows[m]);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Books Borrowed',
+                        data: data,
+                        backgroundColor: 'rgba(230, 126, 34, 0.7)',
+                        borderColor: 'rgba(230, 126, 34, 1)',
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize status pie chart
+        function initStatusChart(returned, active, overdue) {
+            const ctx = document.getElementById('status-chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Returned', 'Active Borrows', 'Overdue'],
+                    datasets: [{
+                        data: [returned, active, overdue],
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(231, 76, 60, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize category pie chart
+        function initCategoryChart(categoryBorrows) {
+            const ctx = document.getElementById('category-chart').getContext('2d');
+            
+            const categories = Object.keys(categoryBorrows);
+            const data = categories.map(c => categoryBorrows[c]);
+            
+            const colors = [
+                'rgba(230, 126, 34, 0.7)',
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)',
+                'rgba(241, 196, 15, 0.7)',
+                'rgba(230, 126, 34, 0.5)',
+                'rgba(52, 152, 219, 0.5)',
+                'rgba(46, 204, 113, 0.5)'
+            ];
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, categories.length),
+                        borderColor: colors.slice(0, categories.length).map(c => c.replace('0.7', '1').replace('0.5', '0.8')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize top categories bar chart
+        function initTopCategoriesChart(categoryBorrows) {
+            const ctx = document.getElementById('top-categories-chart').getContext('2d');
+            
+            const sorted = Object.entries(categoryBorrows)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            const categories = sorted.map(item => item[0]);
+            const data = sorted.map(item => item[1]);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Books Borrowed',
+                        data: data,
+                        backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                        borderColor: 'rgba(155, 89, 182, 1)',
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Load top students

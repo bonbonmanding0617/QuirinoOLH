@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Requests - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-dark);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-orange);
+            border-bottom-color: var(--primary-orange);
+        }
+
+        .request-card {
+            background: var(--bg-white);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-orange);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .request-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .request-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            color: var(--text-gray);
+            font-weight: 500;
+        }
+
+        .meta-value {
+            color: var(--text-dark);
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background-color: var(--very-light-orange);
+            border-radius: 8px;
+        }
+
+        .comparison-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .comparison-col h4 {
+            margin-top: 0;
+            color: var(--text-dark);
+        }
+
+        .comparison-col pre {
+            background: var(--bg-white);
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+        }
+
+        .request-reason {
+            padding: 1rem;
+            background: var(--bg-light-gray);
+            border-left: 3px solid var(--primary-orange);
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-white);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .request-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Approval Requests</span>
+            </div>
+            <div class="navbar-user">
+                <span id="admin-name" style="font-weight: 600; margin-right: 1rem;">Admin</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="admin-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="admin-students.html">👥 Student Management</a></li>
+                <li><a href="admin-teachers.html">👨‍🏫 Teacher Management</a></li>
+                <li><a href="admin-books.html">📚 Books Management</a></li>
+                <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-approvals.html" class="active">✅ Approval Requests</a></li>
+                <li><a href="admin-analytics.html">📈 Analytics</a></li>
+                <li><a href="admin-profile.html">👤 My Profile</a></li>
+                <li><a href="admin-settings.html">⚙️ Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h2 style="margin: 0;">✅ Approval Requests</h2>
+                <span id="pending-count" style="font-weight: 600; color: var(--primary-orange);">Loading...</span>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('pending')">⏳ Pending</button>
+                <button class="tab-btn" onclick="switchTab('approved')">✓ Approved</button>
+                <button class="tab-btn" onclick="switchTab('rejected')">✗ Rejected</button>
+            </div>
+
+            <!-- Pending Requests -->
+            <div id="pending-tab">
+                <div id="pending-requests-container">
+                    <!-- Requests will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Approved Requests -->
+            <div id="approved-tab" style="display: none;">
+                <div id="approved-requests-container">
+                    <!-- Approved requests will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Rejected Requests -->
+            <div id="rejected-tab" style="display: none;">
+                <div id="rejected-requests-container">
+                    <!-- Rejected requests will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="review-title">Review Request</h3>
+                <button class="close-btn" onclick="closeReviewModal()">&times;</button>
+            </div>
+            <form id="review-form">
+                <div class="modal-body">
+                    <input type="hidden" id="review-request-id">
+                    
+                    <div class="form-group">
+                        <label for="review-notes">Review Notes</label>
+                        <textarea id="review-notes" placeholder="Add comments about this request..." style="min-height: 100px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="submitReview('reject')">Reject Request</button>
+                    <button type="button" class="btn btn-success" onclick="submitReview('approve')">Approve Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        let currentUser = null;
+        let allRequests = [];
+        let currentReviewRequestId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser || currentUser.role !== 'admin') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('admin-name').textContent = currentUser.name;
+            loadRequests();
+        });
+
+        // Load all requests from backend
+        function loadRequests() {
+            const token = localStorage.getItem('token');
+            axios.get('http://localhost:3001/api/change-requests', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const requests = res.data.requests || res.data;
+                    allRequests = requests.map(r => ({ ...r, id: r._id }));
+                    updateDisplay();
+                })
+                .catch(err => {
+                    showNotification('Failed to load requests', 'danger');
+                    console.error(err);
+                });
+        }
+
+        // Update display based on current tab
+        function updateDisplay() {
+            const pending = allRequests.filter(r => r.status === 'pending');
+            const approved = allRequests.filter(r => r.status === 'approved');
+            const rejected = allRequests.filter(r => r.status === 'rejected');
+
+            document.getElementById('pending-count').textContent = `Pending: ${pending.length}`;
+
+            displayRequests('pending', pending);
+            displayRequests('approved', approved);
+            displayRequests('rejected', rejected);
+        }
+
+        // Display requests for a specific status
+        function displayRequests(status, requests) {
+            const container = document.getElementById(`${status}-requests-container`);
+
+            if (requests.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #7F8C8D; padding: 2rem;">No ${status} requests</p>`;
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="request-card">
+                    <div class="request-header">
+                        <div>
+                            <div class="request-title">${request.resourceTitle}</div>
+                            <small style="color: var(--text-gray);">${request.resourceType.toUpperCase()} | ${request.changeType.toUpperCase()}</small>
+                        </div>
+                        <span class="badge badge-${status === 'pending' ? 'warning' : (status === 'approved' ? 'success' : 'danger')}">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                    </div>
+
+                    <div class="request-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Requested By</span>
+                            <span class="meta-value">${request.requesterName}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Requested</span>
+                            <span class="meta-value">${formatDate(request.createdAt)}</span>
+                        </div>
+                        ${request.reviewedAt ? `
+                        <div class="meta-item">
+                            <span class="meta-label">Reviewed</span>
+                            <span class="meta-value">${formatDate(request.reviewedAt)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="request-reason">
+                        <strong>Reason:</strong> ${request.reason}
+                    </div>
+
+                    <div class="comparison">
+                        <div class="comparison-col">
+                            <h4>Current Data</h4>
+                            <pre>${JSON.stringify(request.currentData, null, 2)}</pre>
+                        </div>
+                        <div class="comparison-col">
+                            <h4>Proposed Changes</h4>
+                            <pre>${JSON.stringify(request.proposedData, null, 2)}</pre>
+                        </div>
+                    </div>
+
+                    ${request.reviewNotes ? `
+                    <div class="request-reason" style="background: var(--very-light-orange); border-left-color: var(--primary-orange);">
+                        <strong>Review Notes:</strong> ${request.reviewNotes}
+                    </div>
+                    ` : ''}
+
+                    <div class="action-buttons">
+                        ${status === 'pending' ? `
+                            <button class="btn btn-primary" onclick="openReviewModal('${request.id}')">Review Request</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Switch tab
+        function switchTab(tab) {
+            // Hide all tabs
+            document.getElementById('pending-tab').style.display = 'none';
+            document.getElementById('approved-tab').style.display = 'none';
+            document.getElementById('rejected-tab').style.display = 'none';
+
+            // Show selected tab
+            document.getElementById(`${tab}-tab`).style.display = 'block';
+
+            // Update button styles
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Open review modal
+        function openReviewModal(requestId) {
+            currentReviewRequestId = requestId;
+            document.getElementById('review-notes').value = '';
+            document.getElementById('reviewModal').classList.add('active');
+        }
+
+        // Close review modal
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+        }
+
+        // Submit review (approve or reject)
+        function submitReview(action) {
+            const notes = document.getElementById('review-notes').value;
+            const token = localStorage.getItem('token');
+
+            const endpoint = action === 'approve' ? 'approve' : 'reject';
+            axios.put(`http://localhost:3001/api/change-requests/${currentReviewRequestId}/${endpoint}`, {
+                reviewNotes: notes
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification(`Request ${action}d successfully!`, 'success');
+                        closeReviewModal();
+                        loadRequests();
+                    } else {
+                        showNotification(res.data.error || `Failed to ${action} request`, 'danger');
+                    }
+                })
+                .catch(err => showNotification(err.response?.data?.error || 'Connection error', 'danger'));
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (event.target === modal) closeReviewModal();
+        };
+    </script>
+</body>
+</html>

@@ -179,6 +179,7 @@
                 <li><a href="admin-teachers.html">👨‍🏫 Teacher Management</a></li>
                 <li><a href="admin-books.html">📚 Books Management</a></li>
                 <li><a href="admin-ebooks.html" class="active">💾 eBooks Management</a></li>
+                <li><a href="admin-approvals.html">✅ Approval Requests</a></li>
                 <li><a href="admin-analytics.html">📈 Analytics</a></li>
                 <li><a href="admin-profile.html">👤 My Profile</a></li>
                 <li><a href="admin-settings.html">⚙️ Settings</a></li>
@@ -309,6 +310,75 @@
         </div>
     </div>
 
+    <!-- Request Change Modal (for teachers) -->
+    <div id="requestChangeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Request eBook Change</h3>
+                <button class="close-btn" onclick="closeRequestChangeModal()">&times;</button>
+            </div>
+            <form onsubmit="handleRequestChange(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="request-resource-id">
+                    <input type="hidden" id="request-resource-type" value="ebook">
+                    <input type="hidden" id="request-resource-title">
+
+                    <div class="form-group">
+                        <label for="request-change-type">Change Type</label>
+                        <select id="request-change-type" required>
+                            <option value="">Select change type</option>
+                            <option value="update">Update Information</option>
+                            <option value="create">Create New eBook</option>
+                            <option value="delete">Delete eBook</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="request-reason">Reason for Change</label>
+                        <textarea id="request-reason" required placeholder="Explain why this change is needed"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="request-details">Proposed Changes (JSON format)</label>
+                        <textarea id="request-details" required placeholder='{"title": "new title", "author": "new author"}'></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRequestChangeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Request Delete Modal (for teachers) -->
+    <div id="requestDeleteModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Request to Delete eBook</h3>
+                <button class="close-btn" onclick="closeRequestDeleteModal()">&times;</button>
+            </div>
+            <form onsubmit="handleRequestDelete(event)">
+                <input type="hidden" id="delete-resource-id">
+                <input type="hidden" id="delete-resource-type" value="ebook">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>eBook Title</label>
+                        <input type="text" id="delete-resource-title" disabled style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="delete-reason">Reason for Deletion *</label>
+                        <textarea id="delete-reason" placeholder="Explain why this eBook needs to be deleted..." style="min-height: 100px;" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRequestDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Request Deletion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="../js/script.js"></script>
     <script>
         let currentUser = null;
@@ -350,7 +420,19 @@
                 return;
             }
 
-            tbody.innerHTML = ebooks.map(ebook => `
+            tbody.innerHTML = ebooks.map(ebook => {
+                const isAdmin = currentUser.role === 'admin';
+                const actionButtons = isAdmin 
+                    ? `
+                        <button class="btn btn-small btn-primary" onclick="openEditModal('${ebook.id}')">Edit</button>
+                        <button class="btn btn-small btn-outline" onclick="deleteEbook('${ebook.id}')">Delete</button>
+                    `
+                    : `
+                        <button class="btn btn-small btn-secondary" onclick="openRequestChangeModal('${ebook.id}', 'ebook')">Request Change</button>
+                        <button class="btn btn-small btn-warning" onclick="openRequestDeleteModal('${ebook.id}', 'ebook', '${ebook.title}')">Request Delete</button>
+                    `;
+                
+                return `
                 <tr>
                     <td><strong>${ebook.title}</strong></td>
                     <td>${ebook.author}</td>
@@ -359,12 +441,11 @@
                     <td>${formatDate(ebook.addedAt)}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-small btn-primary" onclick="openEditModal('${ebook.id}')">Edit</button>
-                            <button class="btn btn-small btn-outline" onclick="deleteEbook('${ebook.id}')">Delete</button>
+                            ${actionButtons}
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         // Search eBooks
@@ -476,9 +557,122 @@
         function deleteEbook(ebookId) {
             if (!confirm('Are you sure you want to delete this eBook?')) return;
 
-            window.deleteEbook(ebookId);
-            showNotification('eBook deleted successfully!', 'success');
-            loadEbooks();
+            const token = localStorage.getItem('token');
+            axios.delete(`http://localhost:3001/api/ebooks/${ebookId}`, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    showNotification('eBook deleted successfully!', 'success');
+                    loadEbooks();
+                })
+                .catch(err => showNotification(err.response?.data?.error || 'Connection error', 'danger'));
+        }
+
+        // Open request change modal
+        function openRequestChangeModal(ebookId, resourceType) {
+            const ebook = allEbooks.find(e => e.id === ebookId);
+            if (!ebook) return;
+
+            document.getElementById('request-resource-id').value = ebookId;
+            document.getElementById('request-resource-type').value = resourceType;
+            document.getElementById('request-resource-title').value = ebook.title;
+            document.getElementById('request-change-type').value = '';
+            document.getElementById('request-reason').value = '';
+            document.getElementById('request-details').value = '';
+            document.getElementById('requestChangeModal').classList.add('active');
+        }
+
+        // Close request change modal
+        function closeRequestChangeModal() {
+            document.getElementById('requestChangeModal').classList.remove('active');
+        }
+
+        // Handle request change submission
+        function handleRequestChange(event) {
+            event.preventDefault();
+
+            const resourceId = document.getElementById('request-resource-id').value;
+            const resourceType = document.getElementById('request-resource-type').value;
+            const resourceTitle = document.getElementById('request-resource-title').value;
+            const changeType = document.getElementById('request-change-type').value;
+            const reason = document.getElementById('request-reason').value;
+            const detailsStr = document.getElementById('request-details').value;
+
+            // Parse proposed changes
+            let proposedData;
+            try {
+                proposedData = JSON.parse(detailsStr);
+            } catch (e) {
+                showNotification('Invalid JSON format in proposed changes', 'danger');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/change-requests', {
+                resourceType,
+                resourceId,
+                resourceTitle,
+                changeType,
+                proposedData,
+                reason
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Change request submitted successfully! Awaiting admin approval.', 'success');
+                        closeRequestChangeModal();
+                    } else {
+                        showNotification(res.data.error || 'Failed to submit request', 'danger');
+                    }
+                })
+                .catch(err => showNotification(err.response?.data?.error || 'Connection error', 'danger'));
+        }
+
+        // Open request delete modal
+        function openRequestDeleteModal(resourceId, resourceType, resourceTitle) {
+            document.getElementById('delete-resource-id').value = resourceId;
+            document.getElementById('delete-resource-type').value = resourceType;
+            document.getElementById('delete-resource-title').value = resourceTitle;
+            document.getElementById('delete-reason').value = '';
+            document.getElementById('requestDeleteModal').classList.add('active');
+        }
+
+        // Close request delete modal
+        function closeRequestDeleteModal() {
+            document.getElementById('requestDeleteModal').classList.remove('active');
+        }
+
+        // Handle request delete submission
+        function handleRequestDelete(event) {
+            event.preventDefault();
+
+            const resourceId = document.getElementById('delete-resource-id').value;
+            const resourceType = document.getElementById('delete-resource-type').value;
+            const resourceTitle = document.getElementById('delete-resource-title').value;
+            const reason = document.getElementById('delete-reason').value;
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/change-requests', {
+                resourceId,
+                resourceType,
+                resourceTitle,
+                changeType: 'delete',
+                proposedData: { deleteReason: reason }
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Delete request submitted successfully! Waiting for admin approval.', 'success');
+                        closeRequestDeleteModal();
+                    } else {
+                        showNotification(res.data.error || 'Failed to submit request', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
         }
 
         // Logout
@@ -492,9 +686,13 @@
         window.onclick = function(event) {
             const modal = document.getElementById('ebookModal');
             const editModal = document.getElementById('editEbookModal');
+            const requestModal = document.getElementById('requestChangeModal');
+            const requestDeleteModal = document.getElementById('requestDeleteModal');
 
             if (event.target === modal) closeModal();
             if (event.target === editModal) closeEditModal();
+            if (event.target === requestModal) closeRequestChangeModal();
+            if (event.target === requestDeleteModal) closeRequestDeleteModal();
         };
     </script>
 </body>
