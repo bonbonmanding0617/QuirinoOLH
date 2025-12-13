@@ -1,3 +1,13 @@
+// ===== GLOBAL ERROR HANDLERS =====
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -178,12 +188,68 @@ app.delete('/api/students/:id', auth, async (req, res) => {
   }
 });
 
+// Get all teachers
+app.get('/api/teachers', auth, async (req, res) => {
+  const teachers = await User.find({ role: 'teacher' }).select('-password');
+  res.json({ teachers });
+});
+
+// Add teacher
+app.post('/api/teachers', auth, async (req, res) => {
+  const { name, email, password, schoolId, phone, address } = req.body;
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const teacher = await User.create({
+      name,
+      email,
+      password: hash,
+      role: 'teacher',
+      schoolId,
+      phone,
+      address
+    });
+    res.json({ success: true, teacher: { ...teacher.toObject(), password: undefined } });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+// Update teacher
+app.put('/api/teachers/:id', auth, async (req, res) => {
+  const { name, email, schoolId, phone, address } = req.body;
+  try {
+    const teacher = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email, schoolId, phone, address },
+      { new: true }
+    ).select('-password');
+    res.json({ success: true, teacher });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+// Delete teacher
+app.delete('/api/teachers/:id', auth, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
 // ===== BOOK ENDPOINTS =====
 
 // Get all books
 app.get('/api/books', async (req, res) => {
-  const books = await Book.find();
-  res.json({ books });
+  try {
+    const books = await Book.find();
+    res.json({ books });
+  } catch (e) {
+    console.error('Error fetching books:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
 });
 
 // Get book by ID
@@ -240,8 +306,14 @@ app.delete('/api/books/:id', auth, async (req, res) => {
 
 // Get all eBooks
 app.get('/api/ebooks', async (req, res) => {
-  const ebooks = await Ebook.find();
-  res.json({ ebooks });
+    // Get all books (with error handling)
+    try {
+      const books = await Book.find();
+      res.json({ books });
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      res.status(500).json({ success: false, error: 'Failed to fetch books', details: err.message });
+    }
 });
 
 // Get eBook by ID
@@ -363,4 +435,4 @@ app.get('/api/borrow', async (req, res) => {
 
 // ===== START SERVER =====
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on http://localhost:${PORT}`));

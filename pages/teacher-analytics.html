@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-box {
+            background: var(--bg-white);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .analytics-panel {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table thead {
+            background-color: var(--very-light-orange);
+        }
+
+        .analytics-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+        }
+
+        .analytics-table td {
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .analytics-table tbody tr:hover {
+            background-color: var(--bg-light);
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, var(--very-light-orange) 0%, rgba(230, 126, 34, 0.1) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7F8C8D;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .rank-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-number {
+            font-weight: 700;
+            color: var(--primary-orange);
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            width: 40px;
+        }
+
+        .rank-info {
+            flex: 1;
+        }
+
+        .rank-label {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .rank-value {
+            color: var(--secondary-orange);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Analytics</span>
+            </div>
+            <div class="navbar-user">
+                <span id="teacher-name" style="font-weight: 600; margin-right: 1rem;">Teacher</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Teacher Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="teacher-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="teacher-students.html">👨‍🎓 Students</a></li>
+                <li><a href="teacher-books.html">📚 Books</a></li>
+                <li><a href="teacher-analytics.html" class="active">📈 Analytics</a></li>
+                <li><a href="teacher-profile.html">👤 My Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <h2>📊 Library Analytics</h2>
+
+            <!-- Statistics -->
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="total-borrows">0</div>
+                    <div class="stat-label">Total Borrows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="active-borrows">0</div>
+                    <div class="stat-label">Active Borrows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="returned-books">0</div>
+                    <div class="stat-label">Returned Books</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="overdue-count">0</div>
+                    <div class="stat-label">Overdue Returns</div>
+                </div>
+            </div>
+
+            <!-- Borrow Summary -->
+            <div class="analytics-panel">
+                <h3>📚 Recent Borrowing Activity</h3>
+                <div class="chart-placeholder">
+                    Borrowing activity chart will appear here
+                </div>
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Book ID</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrow-records">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #999;">Loading records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top Books -->
+            <div class="analytics-panel">
+                <h3>🏆 Most Borrowed Books</h3>
+                <div id="top-books-container">
+                    <p style="text-align: center; color: #999; padding: 2rem;">Loading data...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const token = localStorage.getItem('token');
+
+            if (!currentUser || !token || currentUser.role !== 'teacher') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('teacher-name').textContent = currentUser.name;
+            loadAnalytics();
+        });
+
+        // Load analytics data
+        function loadAnalytics() {
+            const token = localStorage.getItem('token');
+            
+            // Load borrow records for statistics
+            axios.get('http://localhost:3001/api/borrow', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const records = res.data.records;
+                    
+                    const totalBorrows = records.length;
+                    const activeBorrows = records.filter(r => r.status === 'borrowed').length;
+                    const returnedBooks = records.filter(r => r.status === 'returned').length;
+                    const overdueBorrows = records.filter(r => 
+                        r.status === 'borrowed' && new Date(r.dueDate) < new Date()
+                    ).length;
+                    
+                    document.getElementById('total-borrows').textContent = totalBorrows;
+                    document.getElementById('active-borrows').textContent = activeBorrows;
+                    document.getElementById('returned-books').textContent = returnedBooks;
+                    document.getElementById('overdue-count').textContent = overdueBorrows;
+                    
+                    displayBorrowRecords(records.slice(0, 10).reverse());
+                })
+                .catch(err => {
+                    console.log('Failed to load borrow records:', err);
+                });
+            
+            // Load books for top books
+            axios.get('http://localhost:3001/api/books')
+                .then(res => {
+                    const books = res.data.books
+                        .sort((a, b) => (b.quantity - b.available) - (a.quantity - a.available))
+                        .slice(0, 5);
+                    
+                    displayTopBooks(books);
+                })
+                .catch(err => {
+                    console.log('Failed to load books:', err);
+                });
+        }
+
+        // Display borrow records
+        function displayBorrowRecords(records) {
+            const tbody = document.getElementById('borrow-records');
+            
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #999;">No records found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = records.map(record => {
+                const borrowDate = new Date(record.borrowDate).toLocaleDateString();
+                const dueDate = new Date(record.dueDate).toLocaleDateString();
+                const status = record.status === 'borrowed' ? '📕 Borrowed' : '✅ Returned';
+                
+                return `
+                    <tr>
+                        <td>${record.studentId}</td>
+                        <td>${record.bookId}</td>
+                        <td>${borrowDate}</td>
+                        <td>${dueDate}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Display top books
+        function displayTopBooks(books) {
+            const container = document.getElementById('top-books-container');
+            
+            if (books.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No books data available</p>';
+                return;
+            }
+            
+            container.innerHTML = books.map((book, index) => {
+                const borrowed = book.quantity - book.available;
+                
+                return `
+                    <div class="rank-item">
+                        <div class="rank-number">${index + 1}</div>
+                        <div class="rank-info">
+                            <div class="rank-label">${book.title}</div>
+                            <div class="rank-value">by ${book.author}</div>
+                        </div>
+                        <div style="font-weight: 600; color: var(--primary-orange);">${borrowed} borrowed</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Logout handler
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'admin-login.html';
+        }
+    </script>
+</body>
+</html>

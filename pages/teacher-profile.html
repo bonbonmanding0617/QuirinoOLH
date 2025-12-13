@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .profile-container {
+            max-width: 600px;
+        }
+
+        .profile-card {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profile-avatar {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-header h3 {
+            color: var(--primary-orange);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #D1ECF1;
+            color: #0C5460;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .profile-form {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 5px rgba(252, 127, 39, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn-save {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-cancel {
+            padding: 0.75rem 1.5rem;
+            background: #e0e0e0;
+            color: var(--text-dark);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .form-buttons {
+                flex-direction: column;
+            }
+
+            .form-buttons button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>My Profile</span>
+            </div>
+            <div class="navbar-user">
+                <span id="teacher-name" style="font-weight: 600; margin-right: 1rem;">Teacher</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Teacher Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="teacher-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="teacher-students.html">👨‍🎓 Students</a></li>
+                <li><a href="teacher-books.html">📚 Books</a></li>
+                <li><a href="teacher-analytics.html">📈 Analytics</a></li>
+                <li><a href="teacher-profile.html" class="active">👤 My Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <div class="profile-container">
+                <h2>👤 My Profile</h2>
+
+                <!-- Profile Card -->
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">👨‍🏫</div>
+                        <h3 id="profile-fullname">Teacher Name</h3>
+                        <div class="role-badge">Teacher</div>
+                    </div>
+
+                    <!-- Alert Container -->
+                    <div id="alert-container"></div>
+
+                    <!-- Profile Form -->
+                    <form class="profile-form" onsubmit="handleProfileUpdate(event)">
+                        <div class="form-group">
+                            <label for="profile-name">Full Name</label>
+                            <input type="text" id="profile-name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-email">Email Address</label>
+                            <input type="email" id="profile-email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-schoolid">School ID</label>
+                            <input type="text" id="profile-schoolid" name="schoolId" disabled title="School ID cannot be changed">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-phone">Phone Number</label>
+                            <input type="tel" id="profile-phone" name="phone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-address">Address</label>
+                            <textarea id="profile-address" name="address"></textarea>
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="button" class="btn-cancel" onclick="resetForm()">Cancel</button>
+                            <button type="submit" class="btn-save">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const token = localStorage.getItem('token');
+
+            if (!currentUser || !token || currentUser.role !== 'teacher') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('teacher-name').textContent = currentUser.name;
+            loadProfile();
+        });
+
+        // Load profile
+        function loadProfile() {
+            const token = localStorage.getItem('token');
+            
+            axios.get('http://localhost:3001/api/me', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const user = res.data.user;
+                    document.getElementById('profile-fullname').textContent = user.name;
+                    document.getElementById('profile-name').value = user.name;
+                    document.getElementById('profile-email').value = user.email;
+                    document.getElementById('profile-schoolid').value = user.schoolId || '';
+                    document.getElementById('profile-phone').value = user.phone || '';
+                    document.getElementById('profile-address').value = user.address || '';
+                })
+                .catch(err => {
+                    console.log('Failed to load profile:', err);
+                    showAlert('Failed to load profile', 'error');
+                });
+        }
+
+        // Handle profile update
+        function handleProfileUpdate(event) {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            
+            const profileData = {
+                name: document.getElementById('profile-name').value,
+                email: document.getElementById('profile-email').value,
+                phone: document.getElementById('profile-phone').value,
+                address: document.getElementById('profile-address').value
+            };
+
+            axios.put(`http://localhost:3001/api/users/${currentUser._id}`, profileData, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const updatedUser = res.data.user;
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    currentUser = updatedUser;
+                    document.getElementById('profile-fullname').textContent = updatedUser.name;
+                    document.getElementById('teacher-name').textContent = updatedUser.name;
+                    showAlert('Profile updated successfully!', 'success');
+                })
+                .catch(err => {
+                    console.log('Failed to update profile:', err);
+                    showAlert('Failed to update profile: ' + (err.response?.data?.error || err.message), 'error');
+                });
+        }
+
+        // Reset form
+        function resetForm() {
+            loadProfile();
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alertId = 'alert-' + Date.now();
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type}">
+                    ${message}
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', alertHtml);
+            
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) alert.remove();
+            }, 5000);
+        }
+
+        // Logout handler
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'admin-login.html';
+        }
+    </script>
+</body>
+</html>

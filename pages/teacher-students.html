@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .students-table {
+            background: var(--bg-white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: var(--very-light-orange);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-orange);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:hover {
+            background-color: var(--very-light-orange);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .page-header {
+                flex-direction: column;
+            }
+
+            .search-filter {
+                flex-direction: column;
+            }
+
+            .search-filter input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Student Management</span>
+            </div>
+            <div class="navbar-user">
+                <span id="teacher-name" style="font-weight: 600; margin-right: 1rem;">Teacher</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Teacher Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="teacher-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="teacher-students.html" class="active">👨‍🎓 Students</a></li>
+                <li><a href="teacher-books.html">📚 Books</a></li>
+                <li><a href="teacher-analytics.html">📈 Analytics</a></li>
+                <li><a href="teacher-profile.html">👤 My Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h2 style="margin: 0;">👥 Student Management</h2>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <input type="text" id="search-input" placeholder="Search by name, email, or school ID..." onkeyup="searchStudents()">
+                <button class="btn btn-secondary" onclick="loadStudents()">🔍 Search</button>
+            </div>
+
+            <!-- Students Table -->
+            <div class="students-table">
+                <div class="table-responsive">
+                    <table id="students-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>School ID</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-tbody">
+                            <tr>
+                                <td colspan="5" class="no-data">Loading students...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let allStudents = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const token = localStorage.getItem('token');
+
+            if (!currentUser || !token || currentUser.role !== 'teacher') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('teacher-name').textContent = currentUser.name;
+            loadStudents();
+        });
+
+        // Load students
+        function loadStudents() {
+            const token = localStorage.getItem('token');
+            
+            axios.get('http://localhost:3001/api/students', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    allStudents = res.data.students;
+                    displayStudents(allStudents);
+                })
+                .catch(err => {
+                    console.log('Failed to load students:', err);
+                    document.getElementById('students-tbody').innerHTML = '<tr><td colspan="5" class="no-data">Failed to load students</td></tr>';
+                });
+        }
+
+        // Display students
+        function displayStudents(students) {
+            const tbody = document.getElementById('students-tbody');
+            
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">No students found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => `
+                <tr>
+                    <td>${student.name}</td>
+                    <td>${student.email}</td>
+                    <td>${student.schoolId || 'N/A'}</td>
+                    <td>${student.phone || 'N/A'}</td>
+                    <td>${student.address || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Search students
+        function searchStudents() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allStudents.filter(student => 
+                student.name.toLowerCase().includes(searchTerm) ||
+                student.email.toLowerCase().includes(searchTerm) ||
+                (student.schoolId && student.schoolId.toLowerCase().includes(searchTerm))
+            );
+            displayStudents(filtered);
+        }
+
+        // Logout handler
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'admin-login.html';
+        }
+    </script>
+</body>
+</html>
