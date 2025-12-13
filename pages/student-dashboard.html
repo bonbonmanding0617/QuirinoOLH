@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab-button.active {
+            color: var(--primary-orange);
+            border-bottom-color: var(--primary-orange);
+        }
+
+        .tab-button:hover {
+            color: var(--primary-orange);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #7F8C8D;
+        }
+
+        .empty-state svg {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .borrow-record {
+            background: var(--bg-white);
+            border-left: 4px solid var(--primary-orange);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .borrow-record.overdue {
+            border-left-color: var(--danger);
+            background-color: #FFF5F5;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .record-title {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .record-item {
+            font-size: 0.9rem;
+        }
+
+        .record-item label {
+            color: #7F8C8D;
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .record-item value {
+            display: block;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .ebook-card {
+            background: var(--bg-white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .ebook-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-3px);
+        }
+
+        .ebook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .ebook-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-dark);
+        }
+
+        .ebook-info p {
+            margin: 0;
+            color: #7F8C8D;
+            font-size: 0.9rem;
+        }
+
+        .ebook-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .download-count {
+            color: var(--secondary-orange);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .profile-section {
+            max-width: 600px;
+        }
+
+        .profile-form {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .profile-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-item {
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .profile-item label {
+            color: #7F8C8D;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-item strong {
+            color: var(--text-dark);
+            display: block;
+        }
+
+        .profile-item input[type="text"],
+        .profile-item input[type="email"],
+        .profile-item input[type="tel"] {
+            margin-top: 0.5rem;
+        }
+
+        .school-id-notice {
+            background-color: var(--very-light-orange);
+            border-left: 4px solid var(--primary-orange);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Student Dashboard</span>
+            </div>
+            <div class="navbar-user">
+                <span id="user-name" style="font-weight: 600; margin-right: 1rem;">Student</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <!-- Welcome Message -->
+        <div class="dashboard-panel" style="margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%); color: white;">
+            <h2 style="color: white; margin: 0;">Welcome to Quirino Online Library Hub! 📚</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">Explore our collection and continue your learning journey</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs-container">
+            <button class="tab-button active" onclick="switchTab(event, 'browse')">📚 Browse Books</button>
+            <button class="tab-button" onclick="switchTab(event, 'borrowed')">📖 My Borrowed Books</button>
+            <button class="tab-button" onclick="switchTab(event, 'ebooks')">💾 eBooks</button>
+            <button class="tab-button" onclick="switchTab(event, 'profile')">👤 Profile</button>
+        </div>
+
+        <!-- Browse Books Tab -->
+        <div id="browse" class="tab-content active">
+            <div class="search-bar">
+                <input type="text" id="search-book" placeholder="Search books by title or author..." onkeyup="searchBooks()">
+                <button class="btn btn-primary" onclick="loadBooks()">🔍 Search</button>
+            </div>
+
+            <div id="books-container" class="book-grid">
+                <!-- Books will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Borrowed Books Tab -->
+        <div id="borrowed" class="tab-content">
+            <h3>📖 My Borrowed Books</h3>
+            <div id="borrowed-container">
+                <!-- Borrowed books will be loaded here -->
+            </div>
+        </div>
+
+        <!-- eBooks Tab -->
+        <div id="ebooks" class="tab-content">
+            <h3>💾 eBooks Library</h3>
+            <div class="search-bar">
+                <input type="text" id="search-ebook" placeholder="Search eBooks..." onkeyup="searchEbooks()">
+                <button class="btn btn-primary" onclick="loadEbooks()">🔍 Search</button>
+            </div>
+
+            <div id="ebooks-container">
+                <!-- eBooks will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profile" class="tab-content">
+            <div class="profile-section">
+                <h3>👤 My Profile</h3>
+                
+                <div class="school-id-notice">
+                    ℹ️ <strong>School ID cannot be changed.</strong> It's your unique identifier in the system.
+                </div>
+
+                <div class="profile-form">
+                    <form onsubmit="handleProfileUpdate(event)">
+                        <div class="profile-row">
+                            <div class="form-group">
+                                <label for="profile-name">Full Name</label>
+                                <input type="text" id="profile-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-email">Email Address</label>
+                                <input type="email" id="profile-email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="profile-row">
+                            <div class="form-group">
+                                <label for="profile-phone">Phone Number</label>
+                                <input type="tel" id="profile-phone" name="phone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-schoolid">School ID</label>
+                                <input type="text" id="profile-schoolid" disabled style="opacity: 0.6; cursor: not-allowed;">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-address">Address</label>
+                            <input type="text" id="profile-address" name="address" required style="grid-column: 1 / -1;">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Book Details -->
+    <div id="bookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-book-title">Book Title</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-book-body">
+                <!-- Book details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+                <button id="borrow-btn" type="button" class="btn btn-primary">Borrow Book</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let currentUser = null;
+        let allBooks = [];
+        let allEbooks = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser) {
+                showNotification('Please login first', 'danger');
+                setTimeout(() => window.location.href = 'student-login.html', 2000);
+                return;
+            }
+
+            if (currentUser.role === 'guest') {
+                document.getElementById('profile').style.display = 'none';
+            }
+
+            document.getElementById('user-name').textContent = currentUser.name;
+            loadBooks();
+            loadBorrowedBooks();
+            loadEbooks();
+            loadProfile();
+        });
+
+        // Listen for DB changes and reload all student dashboard data
+        window.addEventListener('databaseUpdated', function() {
+            loadBooks();
+            loadBorrowedBooks();
+            loadEbooks();
+            loadProfile();
+        });
+
+        // Load all books
+        function loadBooks() {
+            axios.get('http://localhost:3001/api/books')
+                .then(res => {
+                    allBooks = res.data.books;
+                    displayBooks(allBooks);
+                })
+                .catch(err => {
+                    console.log('Failed to load books:', err);
+                    showNotification('Failed to load books', 'danger');
+                });
+        }
+
+        // Display books in grid
+        function displayBooks(books) {
+            const container = document.getElementById('books-container');
+            
+            if (books.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><div style="font-size: 3rem;">📭</div><p>No books found</p></div>';
+                return;
+            }
+
+            container.innerHTML = books.map(book => `
+                <div class="book-card">
+                    <div class="book-cover">
+                        <div style="font-size: 3rem;">📕</div>
+                    </div>
+                    <div class="book-info">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-author">by ${book.author}</div>
+                        <div class="book-description">${book.description}</div>
+                        <div style="color: var(--secondary-orange); font-weight: 600; margin-bottom: 1rem;">
+                            Available: ${book.available}/${book.quantity}
+                        </div>
+                        <div class="book-actions">
+                            <button class="btn btn-primary btn-small" onclick="showBookDetails('${book._id}')">View Details</button>
+                            ${book.available > 0 ? `<button class="btn btn-secondary btn-small" onclick="quickBorrow('${book._id}')">Borrow</button>` : '<button class="btn btn-small" disabled>Not Available</button>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Search books
+        function searchBooks() {
+            const query = document.getElementById('search-book').value.toLowerCase();
+            const filtered = allBooks.filter(book =>
+                book.title.toLowerCase().includes(query) ||
+                book.author.toLowerCase().includes(query) ||
+                book.category.toLowerCase().includes(query)
+            );
+            displayBooks(filtered);
+        }
+
+        // Show book details in modal
+        function showBookDetails(bookId) {
+            const book = allBooks.find(b => b._id === bookId);
+            if (!book) return;
+
+            document.getElementById('modal-book-title').textContent = book.title;
+            document.getElementById('modal-book-body').innerHTML = `
+                <div>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn}</p>
+                    <p><strong>Category:</strong> ${book.category}</p>
+                    <p><strong>Description:</strong></p>
+                    <p>${book.description}</p>
+                    <p><strong>Availability:</strong> ${book.available} of ${book.quantity} copies available</p>
+                </div>
+            `;
+
+            const borrowBtn = document.getElementById('borrow-btn');
+            if (book.available > 0) {
+                borrowBtn.disabled = false;
+                borrowBtn.onclick = function() {
+                    borrowBook(bookId);
+                };
+            } else {
+                borrowBtn.disabled = true;
+                borrowBtn.textContent = 'Not Available';
+            }
+
+            document.getElementById('bookModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('bookModal').classList.remove('active');
+        }
+
+        // Quick borrow
+        function quickBorrow(bookId) {
+            borrowBook(bookId);
+        }
+
+        // Borrow book
+        function borrowBook(bookId) {
+            if (currentUser.role === 'guest') {
+                showNotification('Guests cannot borrow books. Please create an account.', 'warning');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/borrow', {
+                bookId: bookId,
+                borrowDays: 14
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    showNotification('Book borrowed successfully!', 'success');
+                    closeModal();
+                    loadBooks();
+                    loadBorrowedBooks();
+                })
+                .catch(err => {
+                    console.log('Failed to borrow book:', err);
+                    showNotification(err.response?.data?.message || 'Failed to borrow book', 'danger');
+                });
+        }
+
+        // Load borrowed books
+        function loadBorrowedBooks() {
+            const token = localStorage.getItem('token');
+            
+            axios.get('http://localhost:3001/api/borrow/student/' + currentUser._id, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const records = res.data.records;
+                    const container = document.getElementById('borrowed-container');
+
+                    if (records.length === 0) {
+                        container.innerHTML = '<div class="empty-state"><div style="font-size: 3rem;">📭</div><p>You haven\'t borrowed any books yet</p></div>';
+                        return;
+                    }
+
+                    const html = records.map(record => {
+                        const book = allBooks.find(b => b._id === record.bookId);
+                        const dueDate = new Date(record.dueDate);
+                        const today = new Date();
+                        const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                        const isOverdueStatus = daysLeft < 0 && record.status === 'borrowed';
+
+                        return `
+                            <div class="borrow-record ${record.status !== 'borrowed' ? 'returned' : ''} ${isOverdueStatus ? 'overdue' : ''}">
+                                <div class="record-header">
+                                    <div class="record-title">${book ? book.title : 'Unknown Book'}</div>
+                                    <span class="badge badge-${record.status === 'returned' ? 'success' : (isOverdueStatus ? 'danger' : 'info')}">
+                                        ${record.status === 'returned' ? '✓ Returned' : (isOverdueStatus ? '⚠ Overdue' : '📖 Borrowed')}
+                                    </span>
+                                </div>
+                                <div class="record-details">
+                                    <div class="record-item">
+                                        <label>Borrowed On</label>
+                                        <value>${new Date(record.borrowDate).toLocaleDateString()}</value>
+                                    </div>
+                                    <div class="record-item">
+                                        <label>Due Date</label>
+                                        <value>${new Date(record.dueDate).toLocaleDateString()}</value>
+                                    </div>
+                                    ${record.status === 'returned' ? `
+                                        <div class="record-item">
+                                            <label>Returned On</label>
+                                            <value>${new Date(record.returnDate).toLocaleDateString()}</value>
+                                        </div>
+                                    ` : `
+                                        <div class="record-item">
+                                            <label>Days Remaining</label>
+                                            <value style="color: ${daysLeft <= 3 ? '#E74C3C' : '#27AE60'};">${Math.max(0, daysLeft)} days</value>
+                                        </div>
+                                    `}
+                                </div>
+                                ${record.status === 'borrowed' ? `
+                                    <button class="btn btn-small btn-primary" onclick="returnBook('${record._id}')">Return Book</button>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                    container.innerHTML = html;
+                })
+                .catch(err => {
+                    console.log('Failed to load borrowed books:', err);
+                    document.getElementById('borrowed-container').innerHTML = 
+                        '<div class="empty-state"><p style="color: red;">Failed to load borrowed books</p></div>';
+                });
+        }
+
+        // Return book
+        function returnBook(recordId) {
+            if (confirm('Are you sure you want to return this book?')) {
+                const token = localStorage.getItem('token');
+                
+                axios.put('http://localhost:3001/api/borrow/' + recordId + '/return', {}, {
+                    headers: { Authorization: 'Bearer ' + token }
+                })
+                    .then(res => {
+                        showNotification('Book returned successfully!', 'success');
+                        loadBorrowedBooks();
+                        loadBooks();
+                    })
+                    .catch(err => {
+                        console.log('Failed to return book:', err);
+                        showNotification(err.response?.data?.message || 'Failed to return book', 'danger');
+                    });
+            }
+        }
+
+        // Load eBooks
+        function loadEbooks() {
+            axios.get('http://localhost:3001/api/ebooks')
+                .then(res => {
+                    allEbooks = res.data.ebooks;
+                    displayEbooks(allEbooks);
+                })
+                .catch(err => {
+                    console.log('Failed to load ebooks:', err);
+                    showNotification('Failed to load ebooks', 'danger');
+                });
+        }
+
+        // Display eBooks
+        function displayEbooks(ebooks) {
+            const container = document.getElementById('ebooks-container');
+
+            if (ebooks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div style="font-size: 3rem;">📭</div><p>No eBooks available</p></div>';
+                return;
+            }
+
+            container.innerHTML = ebooks.map(ebook => `
+                <div class="ebook-card">
+                    <div class="ebook-header">
+                        <div class="ebook-info">
+                            <h4>${ebook.title}</h4>
+                            <p><strong>Author:</strong> ${ebook.author}</p>
+                            <p><strong>Category:</strong> ${ebook.category}</p>
+                            <p>${ebook.description}</p>
+                            <p style="margin-top: 0.5rem;"><span class="download-count">⬇️ ${ebook.downloads} downloads</span></p>
+                        </div>
+                    </div>
+                    <div class="ebook-actions">
+                        <button class="btn btn-primary btn-small" onclick="readEbook('${ebook._id}')">📖 Read Online</button>
+                        <button class="btn btn-secondary btn-small" onclick="downloadEbook('${ebook._id}')">⬇️ Download</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Search eBooks
+        function searchEbooks() {
+            const query = document.getElementById('search-ebook').value.toLowerCase();
+            const filtered = allEbooks.filter(ebook =>
+                ebook.title.toLowerCase().includes(query) ||
+                ebook.author.toLowerCase().includes(query)
+            );
+            displayEbooks(filtered);
+        }
+
+        // Read eBook
+        function readEbook(ebookId) {
+            const ebook = getEbookById(ebookId);
+            if (!ebook) return;
+
+            window.open(ebook.filePath, '_blank');
+            showNotification('Opening eBook...', 'info');
+        }
+
+        // Download eBook
+        function downloadEbook(ebookId) {
+            const token = localStorage.getItem('token');
+            const ebook = allEbooks.find(e => e._id === ebookId);
+            if (!ebook) return;
+
+            // Increment download count on backend
+            axios.put('http://localhost:3001/api/ebooks/' + ebookId + '/download', {}, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    // Download the file if available
+                    if (ebook.filePath) {
+                        const link = document.createElement('a');
+                        link.href = ebook.filePath;
+                        link.download = ebook.title + '.pdf';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                    showNotification('eBook downloaded successfully!', 'success');
+                    loadEbooks();
+                })
+                .catch(err => {
+                    console.log('Failed to download ebook:', err);
+                    showNotification('Failed to download eBook', 'danger');
+                });
+        }
+
+        // Load profile
+        function loadProfile() {
+            const token = localStorage.getItem('token');
+            
+            if (currentUser.role === 'guest') {
+                document.getElementById('profile-name').value = 'Guest';
+                return;
+            }
+
+            axios.get('http://localhost:3001/api/me', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const user = res.data.user;
+                    document.getElementById('profile-name').value = user.name;
+                    document.getElementById('profile-email').value = user.email;
+                    document.getElementById('profile-phone').value = user.phone || '';
+                    document.getElementById('profile-address').value = user.address || '';
+                    document.getElementById('profile-schoolid').value = user.schoolId || 'N/A';
+                })
+                .catch(err => {
+                    console.log('Failed to load profile:', err);
+                });
+        }
+
+        // Update profile
+        function handleProfileUpdate(event) {
+            event.preventDefault();
+
+            if (currentUser.role === 'guest') {
+                showNotification('Guests cannot update profile', 'warning');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            const updates = {
+                name: document.getElementById('profile-name').value,
+                email: document.getElementById('profile-email').value,
+                phone: document.getElementById('profile-phone').value,
+                address: document.getElementById('profile-address').value
+            };
+
+            axios.put('http://localhost:3001/api/users/' + currentUser._id, updates, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const updated = res.data.user;
+                    setCurrentUser(updated);
+                    currentUser = updated;
+                    showNotification('Profile updated successfully!', 'success');
+                })
+                .catch(err => {
+                    console.log('Failed to update profile:', err);
+                    showNotification(err.response?.data?.message || 'Failed to update profile', 'danger');
+                });
+        }
+
+        // Switch tabs
+        function switchTab(event, tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('bookModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
+</body>
+</html>

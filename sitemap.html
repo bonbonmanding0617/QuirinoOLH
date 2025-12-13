@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Map - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background-color: var(--bg-light);
+        }
+
+        .navbar {
+            box-shadow: var(--shadow);
+        }
+
+        .container {
+            max-width: 1000px;
+            padding: 2rem 20px;
+        }
+
+        .section {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            color: var(--primary-orange);
+            border-bottom: 3px solid var(--very-light-orange);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .link-card {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-orange);
+            transition: all 0.3s ease;
+        }
+
+        .link-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow);
+        }
+
+        .link-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+        }
+
+        .link-card p {
+            margin: 0 0 1rem 0;
+            color: #7F8C8D;
+            font-size: 0.9rem;
+        }
+
+        .link-card a {
+            color: var(--primary-orange);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link-card a:hover {
+            text-decoration: underline;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li:before {
+            content: "✓ ";
+            color: var(--primary-orange);
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .code-block {
+            background: #2C3E50;
+            color: #ECF0F1;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .demo-creds {
+            background: var(--very-light-orange);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-orange);
+            margin-bottom: 1.5rem;
+        }
+
+        .demo-creds h3 {
+            color: var(--primary-orange);
+            margin-top: 0;
+        }
+
+        .cred-item {
+            margin-bottom: 1rem;
+        }
+
+        .cred-item strong {
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="navbar-brand">
+                <img src="Logo/1000.png" alt="QOLH Logo" style="height: 40px; margin-right: 15px;">
+                <span>Quirino Online Library Hub - Sitemap</span>
+            </div>
+            <a href="index.html" class="btn btn-primary btn-small">← Back to Home</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 style="text-align: center; color: var(--primary-orange); margin-bottom: 2rem;">📑 Complete Site Navigation</h1>
+
+        <!-- Public Pages Section -->
+        <div class="section">
+            <h2>🌐 Public Pages</h2>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Welcome Page</h3>
+                    <p>Main landing page with features, mission, and benefits</p>
+                    <a href="index.html">→ Open index.html</a>
+                </div>
+                <div class="link-card">
+                    <h3>Project Documentation</h3>
+                    <p>Complete documentation and feature overview</p>
+                    <a href="README.md" target="_blank">→ View README.md</a>
+                </div>
+                <div class="link-card">
+                    <h3>Quick Start Guide</h3>
+                    <p>Step-by-step guide to get started quickly</p>
+                    <a href="QUICK_START.md" target="_blank">→ View QUICK_START.md</a>
+                </div>
+                <div class="link-card">
+                    <h3>Site Navigation</h3>
+                    <p>You are here - complete site navigation</p>
+                    <a href="sitemap.html">→ Current Page</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Pages Section -->
+        <div class="section">
+            <h2>👨‍🎓 Student Pages</h2>
+            <p style="color: #7F8C8D; margin-bottom: 1.5rem;">Login and dashboard pages for student users</p>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Student Login/Signup</h3>
+                    <p>Student authentication and account creation</p>
+                    <a href="pages/student-login.html">→ student-login.html</a>
+                </div>
+                <div class="link-card">
+                    <h3>Student Dashboard</h3>
+                    <p>Main student interface - browse, borrow, return books and eBooks</p>
+                    <a href="pages/student-dashboard.html">→ student-dashboard.html</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin/Teacher Pages Section -->
+        <div class="section">
+            <h2>👨‍💼 Administrator & Teacher Pages</h2>
+            <p style="color: #7F8C8D; margin-bottom: 1.5rem;">Admin and teacher authentication and management pages</p>
+            
+            <h3 style="margin: 2rem 0 1rem 0;">🔐 Authentication</h3>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Admin/Teacher Login</h3>
+                    <p>Authentication for admin and teacher users</p>
+                    <a href="pages/admin-login.html">→ admin-login.html</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem 0;">📊 Dashboard & Core</h3>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Admin Dashboard</h3>
+                    <p>Main admin interface with statistics and quick actions</p>
+                    <a href="pages/admin-dashboard.html">→ admin-dashboard.html</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem 0;">👥 Management Pages</h3>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Student Management</h3>
+                    <p>Add, edit, delete students and view their borrow records</p>
+                    <a href="pages/admin-students.html">→ admin-students.html</a>
+                </div>
+                <div class="link-card">
+                    <h3>Books Management</h3>
+                    <p>Manage physical books - add, edit, delete, track inventory</p>
+                    <a href="pages/admin-books.html">→ admin-books.html</a>
+                </div>
+                <div class="link-card">
+                    <h3>eBooks Management</h3>
+                    <p>Manage digital books - upload, edit, delete, track downloads</p>
+                    <a href="pages/admin-ebooks.html">→ admin-ebooks.html</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem 0;">📈 Analytics & Reports</h3>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>Analytics Dashboard</h3>
+                    <p>View statistics, top students, popular books, activity logs</p>
+                    <a href="pages/admin-analytics.html">→ admin-analytics.html</a>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem 0;">⚙️ Account & Settings</h3>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>My Profile</h3>
+                    <p>Update admin/teacher profile information</p>
+                    <a href="pages/admin-profile.html">→ admin-profile.html</a>
+                </div>
+                <div class="link-card">
+                    <h3>System Settings</h3>
+                    <p>Configure library settings, notifications, and security</p>
+                    <a href="pages/admin-settings.html">→ admin-settings.html</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Credentials Section -->
+        <div class="section">
+            <h2>🔑 Demo Credentials</h2>
+            
+            <div class="demo-creds">
+                <h3>👨‍💼 Administrator Account</h3>
+                <div class="cred-item">
+                    <strong>Email:</strong> admin@qolh.com<br>
+                    <strong>Password:</strong> admin123<br>
+                    <strong>Role:</strong> Administrator (Full Access)
+                </div>
+            </div>
+
+            <div class="demo-creds">
+                <h3>👨‍🏫 Teacher Account</h3>
+                <div class="cred-item">
+                    <strong>Email:</strong> teacher1@qolh.com<br>
+                    <strong>Password:</strong> teacher123<br>
+                    <strong>Role:</strong> Teacher (Student Management)
+                </div>
+            </div>
+
+            <div class="demo-creds">
+                <h3>👨‍🎓 Student Account</h3>
+                <div class="cred-item">
+                    <strong>Email:</strong> student@qolh.com<br>
+                    <strong>Password:</strong> student123<br>
+                    <strong>Role:</strong> Student (Basic Access)
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Summary -->
+        <div class="section">
+            <h2>✨ Features Summary</h2>
+            
+            <h3 style="color: var(--text-dark); margin-bottom: 1rem;">Student Features</h3>
+            <ul class="feature-list">
+                <li>Browse and search library books</li>
+                <li>Borrow physical books</li>
+                <li>Return borrowed books</li>
+                <li>Track due dates and borrowing history</li>
+                <li>Read eBooks online</li>
+                <li>Download eBooks for offline access</li>
+                <li>Manage profile information</li>
+                <li>Guest login option</li>
+                <li>Self-registration</li>
+            </ul>
+
+            <h3 style="color: var(--text-dark); margin-bottom: 1rem; margin-top: 2rem;">Administrator & Teacher Features</h3>
+            <ul class="feature-list">
+                <li>Student management (add, edit, delete)</li>
+                <li>Physical book management</li>
+                <li>eBook management and upload</li>
+                <li>Monitor student borrowing activities</li>
+                <li>Force return overdue books</li>
+                <li>View detailed analytics and reports</li>
+                <li>Top students and popular books ranking</li>
+                <li>System configuration and settings</li>
+                <li>Profile management</li>
+            </ul>
+        </div>
+
+        <!-- File Structure -->
+        <div class="section">
+            <h2>📁 Project File Structure</h2>
+            <div class="code-block">
+QOLH/
+├── index.html                    # Landing page
+├── README.md                      # Complete documentation
+├── QUICK_START.md                # Quick start guide
+├── sitemap.html                  # Navigation map (this file)
+├── css/
+│   └── style.css                # Main styling (orange theme)
+├── js/
+│   └── script.js                # Database & utilities
+├── pages/
+│   ├── student-login.html       # Student login/signup
+│   ├── student-dashboard.html   # Student main page
+│   ├── admin-login.html         # Admin/Teacher login
+│   ├── admin-dashboard.html     # Admin main page
+│   ├── admin-students.html      # Student management
+│   ├── admin-books.html         # Book management
+│   ├── admin-ebooks.html        # eBook management
+│   ├── admin-analytics.html     # Analytics/Reports
+│   ├── admin-profile.html       # Profile management
+│   └── admin-settings.html      # System settings
+├── images/                       # Logo & media files
+└── uploads/
+    └── ebooks/                   # eBook storage
+            </div>
+        </div>
+
+        <!-- Getting Started -->
+        <div class="section">
+            <h2>🚀 Getting Started</h2>
+            <ol style="line-height: 2;">
+                <li><strong>Open</strong> <code>index.html</code> in your browser</li>
+                <li><strong>Choose</strong> your role: Student or Admin/Teacher</li>
+                <li><strong>Use</strong> demo credentials above to login</li>
+                <li><strong>Explore</strong> all features and functionality</li>
+                <li><strong>Create</strong> new accounts and test the system</li>
+            </ol>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="section">
+            <h2>⚡ Quick Links</h2>
+            <div class="links-grid">
+                <div class="link-card">
+                    <h3>🏠 Home</h3>
+                    <a href="index.html">→ Go to Home Page</a>
+                </div>
+                <div class="link-card">
+                    <h3>📚 Student Login</h3>
+                    <a href="pages/student-login.html">→ Student Portal</a>
+                </div>
+                <div class="link-card">
+                    <h3>👨‍💼 Admin Login</h3>
+                    <a href="pages/admin-login.html">→ Admin Portal</a>
+                </div>
+                <div class="link-card">
+                    <h3>📖 Documentation</h3>
+                    <a href="README.md" target="_blank">→ View Docs</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: #7F8C8D;">
+            <p>Quirino Online Library Hub - v1.0.0</p>
+            <p style="font-size: 0.9rem;">Created for Educational Institution Library Management</p>
+            <p style="margin-bottom: 0;">© 2024 Quirino Province</p>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

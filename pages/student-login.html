@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-header img {
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        .login-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .login-header p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0 0;
+            font-size: 0.95rem;
+        }
+
+        .login-content {
+            padding: 2rem;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .form-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .form-tab.active {
+            color: var(--primary-orange);
+            border-bottom-color: var(--primary-orange);
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+            color: #7F8C8D;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .guest-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 1rem;
+            border: 2px solid var(--border-color);
+            background: white;
+            color: var(--text-dark);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .guest-button:hover {
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .admin-link a {
+            color: var(--primary-orange);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .back-link a {
+            color: var(--primary-orange);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .navbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Header -->
+        <div class="login-header">
+            <img src="https://sdo-quirino.com.ph/wp-content/uploads/2017/12/DO-Quirino-New-Logo-600-x-600.png" alt="QOLH Logo">
+            <h2>Student Portal</h2>
+            <p>Login to access the library</p>
+        </div>
+
+        <!-- Content -->
+        <div class="login-content">
+            <!-- Form Tabs -->
+            <div class="form-tabs">
+                <button class="form-tab active" onclick="switchTab('login')">Login</button>
+                <button class="form-tab" onclick="switchTab('signup')">Create Account</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login" class="form-content active">
+                <form onsubmit="handleStudentLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" name="email" required placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" name="password" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Login to Your Account</button>
+                </form>
+
+                <div class="divider">OR</div>
+
+                <button type="button" class="guest-button" onclick="loginAsGuest()">
+                    👤 Continue as Guest
+                </button>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup" class="form-content">
+                <form onsubmit="handleStudentSignup(event)">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" name="name" required placeholder="John Doe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" name="email" required placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-phone">Phone Number</label>
+                        <input type="text" id="signup-phone" name="phone" required placeholder="09123456789">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-address">Address</label>
+                        <input type="text" id="signup-address" name="address" required placeholder="123 Main Street">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-schoolid">School ID Number (optional)</label>
+                        <input type="text" id="signup-schoolid" name="schoolId" placeholder="e.g. STU123">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" name="password" required placeholder="••••••••" minlength="6">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signup-confirm">Confirm Password</label>
+                        <input type="password" id="signup-confirm" name="confirm" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+            </div>
+
+            <!-- Admin Link -->
+            <div class="admin-link">
+                <p style="margin: 0 0 1rem 0; color: var(--text-dark);">Are you a teacher or administrator?</p>
+                <a href="admin-login.html">Login as Administrator/Teacher</a>
+            </div>
+
+            <!-- Back Link -->
+            <div class="back-link">
+                <a href="../index.html">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all forms
+            const forms = document.querySelectorAll('.form-content');
+            forms.forEach(form => form.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.form-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected form
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Student Login - using backend API
+        function handleStudentLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            axios.post('http://localhost:3001/api/login', { email, password, role: 'student' })
+                .then(res => {
+                    if (res.data.success) {
+                        localStorage.setItem('token', res.data.token);
+                        localStorage.setItem('currentUser', JSON.stringify(res.data.user));
+                        setCurrentUser(res.data.user);
+                        showNotification('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'student-dashboard.html';
+                        }, 1500);
+                    } else {
+                        showNotification(res.data.error || 'Login failed', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
+        }
+
+        // Student Signup - using backend API
+        function handleStudentSignup(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const phone = document.getElementById('signup-phone').value.trim();
+            const address = document.getElementById('signup-address').value.trim();
+            const schoolId = document.getElementById('signup-schoolid').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-confirm').value;
+
+            // Validation
+            if (password !== confirm) {
+                showNotification('Passwords do not match', 'danger');
+                return;
+            }
+
+            axios.post('http://localhost:3001/api/register', {
+                name,
+                email,
+                phone,
+                address,
+                schoolId: schoolId || undefined,
+                password,
+                role: 'student'
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Account created successfully! Please login.', 'success');
+                        setTimeout(() => {
+                            switchTab('login');
+                            document.getElementById('login-email').value = email;
+                            document.getElementById('login-password').value = '';
+                        }, 1500);
+                    } else {
+                        showNotification(res.data.error || 'Registration failed', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
+        }
+
+        // Guest Login
+        function loginAsGuest() {
+            const guestUser = {
+                id: 'GUEST_' + generateId(),
+                name: 'Guest User',
+                email: 'guest@qolh.local',
+                role: 'guest',
+                schoolId: null
+            };
+            
+            setCurrentUser(guestUser);
+            showNotification('Logged in as guest. Limited access available.', 'info');
+            setTimeout(() => {
+                window.location.href = 'student-dashboard.html';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

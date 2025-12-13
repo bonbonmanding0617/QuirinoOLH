@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .quick-actions {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .quick-actions h3 {
+            margin-top: 0;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-btn {
+            padding: 1rem;
+            text-align: center;
+            border: none;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-btn:visited {
+            color: white;
+        }
+
+        .recent-activities {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-text {
+            flex: 1;
+        }
+
+        .activity-text p {
+            margin: 0;
+        }
+
+        .activity-time {
+            color: #7F8C8D;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            margin-left: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Admin Dashboard</span>
+            </div>
+            <div class="navbar-user">
+                <span id="admin-name" style="font-weight: 600; margin-right: 1rem;">Admin</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="admin-dashboard.html" class="active">📊 Dashboard</a></li>
+                <li><a href="admin-students.html">👥 Student Management</a></li>
+                <li><a href="admin-books.html">📚 Books Management</a></li>
+                <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-analytics.html">📈 Analytics</a></li>
+                <li><a href="admin-profile.html">👤 My Profile</a></li>
+                <li><a href="admin-settings.html">⚙️ Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h2>Welcome to Admin Dashboard 👋</h2>
+                <div class="user-info">
+                    <span id="role-badge" class="badge badge-info"></span>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="total-students">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-books">0</div>
+                    <div class="stat-label">Total Books</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="active-borrows">0</div>
+                    <div class="stat-label">Active Borrows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="overdue-borrows">0</div>
+                    <div class="stat-label">Overdue Returns</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-ebooks">0</div>
+                    <div class="stat-label">Total eBooks</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>⚡ Quick Actions</h3>
+                <div class="action-buttons">
+                    <a href="admin-students.html" class="action-btn">➕ Add New Student</a>
+                    <a href="admin-books.html" class="action-btn">📖 Add Book</a>
+                    <a href="admin-ebooks.html" class="action-btn">📱 Upload eBook</a>
+                    <a href="admin-analytics.html" class="action-btn">📊 View Analytics</a>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="recent-activities">
+                <h3>📋 Recent Borrowing Activities</h3>
+                <div id="activities-container">
+                    <!-- Activities will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            if (currentUser.role !== 'admin' && currentUser.role !== 'teacher') {
+                window.location.href = 'student-login.html';
+                return;
+            }
+
+            document.getElementById('admin-name').textContent = currentUser.name;
+            document.getElementById('role-badge').textContent = 
+                currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+
+            loadDashboardData();
+            loadRecentActivities();
+        });
+
+        // Load dashboard data
+        function loadDashboardData() {
+            const token = localStorage.getItem('token');
+            
+            // Load students count
+            axios.get('http://localhost:3001/api/students', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    document.getElementById('total-students').textContent = res.data.students.length;
+                })
+                .catch(err => console.log('Failed to load students'));
+            
+            // Load books count
+            axios.get('http://localhost:3001/api/books')
+                .then(res => {
+                    document.getElementById('total-books').textContent = res.data.books.length;
+                })
+                .catch(err => console.log('Failed to load books'));
+            
+            // Load eBooks count
+            axios.get('http://localhost:3001/api/ebooks')
+                .then(res => {
+                    document.getElementById('total-ebooks').textContent = res.data.ebooks.length;
+                })
+                .catch(err => console.log('Failed to load ebooks'));
+            
+            // Load borrow records
+            axios.get('http://localhost:3001/api/borrow', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const records = res.data.records;
+                    const activeBorrows = records.filter(r => r.status === 'borrowed').length;
+                    const overdueBorrows = records.filter(r => {
+                        if (r.status === 'borrowed') {
+                            return new Date(r.dueDate) < new Date();
+                        }
+                        return false;
+                    }).length;
+                    document.getElementById('active-borrows').textContent = activeBorrows;
+                    document.getElementById('overdue-borrows').textContent = overdueBorrows;
+                })
+                .catch(err => console.log('Failed to load borrow records'));
+        }
+
+
+
+        // Load recent activities
+        function loadRecentActivities() {
+            const token = localStorage.getItem('token');
+            
+            axios.get('http://localhost:3001/api/borrow', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const records = res.data.records.slice(-10).reverse();
+                    const container = document.getElementById('activities-container');
+
+                    if (records.length === 0) {
+                        container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No recent activities</p>';
+                        return;
+                    }
+
+                    const html = records.map(record => {
+                        const action = record.status === 'borrowed' ? '📖 Borrowed' : '✓ Returned';
+                        const date = record.status === 'borrowed' ? record.borrowDate : record.returnDate;
+
+                        return `
+                            <div class="activity-item">
+                                <div class="activity-text">
+                                    <p><strong>${record.studentId}</strong> ${action} <strong>"${record.bookId}"</strong></p>
+                                </div>
+                                <div class="activity-time">${new Date(date).toLocaleDateString()}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    container.innerHTML = html;
+                })
+                .catch(err => {
+                    console.log('Failed to load activities');
+                    document.getElementById('activities-container').innerHTML = 
+                        '<p style="text-align: center; color: red;">Failed to load activities</p>';
+                });
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Set active menu item
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const menuLinks = document.querySelectorAll('.sidebar-menu a');
+            menuLinks.forEach(link => {
+                if (link.getAttribute('href').includes(currentPath.split('/').pop())) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

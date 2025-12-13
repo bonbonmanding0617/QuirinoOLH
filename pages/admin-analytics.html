@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .analytics-panel {
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table thead {
+            background-color: var(--very-light-orange);
+        }
+
+        .analytics-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+        }
+
+        .analytics-table td {
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .analytics-table tbody tr:hover {
+            background-color: var(--bg-light);
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, var(--very-light-orange) 0%, rgba(230, 126, 34, 0.1) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7F8C8D;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .rank-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-number {
+            font-weight: 700;
+            color: var(--primary-orange);
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            width: 40px;
+        }
+
+        .rank-info {
+            flex: 1;
+        }
+
+        .rank-label {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .rank-value {
+            color: var(--secondary-orange);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-table {
+                font-size: 0.9rem;
+            }
+
+            .analytics-table th,
+            .analytics-table td {
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Analytics Dashboard</span>
+            </div>
+            <div class="navbar-user">
+                <span id="admin-name" style="font-weight: 600; margin-right: 1rem;">Admin</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="admin-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="admin-students.html">👥 Student Management</a></li>
+                <li><a href="admin-books.html">📚 Books Management</a></li>
+                <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-analytics.html" class="active">📈 Analytics</a></li>
+                <li><a href="admin-profile.html">👤 My Profile</a></li>
+                <li><a href="admin-settings.html">⚙️ Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <h2 style="margin-top: 0;">📊 Library Analytics</h2>
+
+            <!-- Key Statistics -->
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="total-borrows">0</div>
+                    <div class="stat-label">Total Borrows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-returns">0</div>
+                    <div class="stat-label">Total Returns</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="active-borrows">0</div>
+                    <div class="stat-label">Active Borrows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="overdue-borrows">0</div>
+                    <div class="stat-label">Overdue Borrows</div>
+                </div>
+            </div>
+
+            <!-- Top Students -->
+            <div class="analytics-panel">
+                <h3>🏆 Top Borrowing Students</h3>
+                <div id="top-students-container">
+                    <!-- Top students will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Top Books -->
+            <div class="analytics-panel">
+                <h3>📚 Most Borrowed Books</h3>
+                <div id="top-books-container">
+                    <!-- Top books will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Borrowing Activity Table -->
+            <div class="analytics-panel">
+                <h3>📋 Recent Borrowing Activity</h3>
+                <div style="overflow-x: auto;">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Book Title</th>
+                                <th>Borrowed Date</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-tbody">
+                            <!-- Activity records will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'teacher')) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('admin-name').textContent = currentUser.name;
+            loadAnalytics();
+        });
+
+        // Load analytics data
+        function loadAnalytics() {
+            const token = localStorage.getItem('token');
+            
+            // Load borrow records for statistics
+            axios.get('http://localhost:3001/api/borrow', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    const records = res.data.records;
+                    const totalBorrows = records.length;
+                    const totalReturns = records.filter(r => r.status === 'returned').length;
+                    const activeBorrows = records.filter(r => r.status === 'borrowed').length;
+                    const overdueBorrows = records.filter(r => {
+                        if (r.status === 'borrowed') {
+                            return new Date(r.dueDate) < new Date();
+                        }
+                        return false;
+                    }).length;
+
+                    document.getElementById('total-borrows').textContent = totalBorrows;
+                    document.getElementById('total-returns').textContent = totalReturns;
+                    document.getElementById('active-borrows').textContent = activeBorrows;
+                    document.getElementById('overdue-borrows').textContent = overdueBorrows;
+
+                    // Calculate top students and books from records
+                    const studentBorrows = {};
+                    const bookBorrows = {};
+                    
+                    records.forEach(record => {
+                        studentBorrows[record.studentId] = (studentBorrows[record.studentId] || 0) + 1;
+                        bookBorrows[record.bookId] = (bookBorrows[record.bookId] || 0) + 1;
+                    });
+
+                    const topStudents = Object.entries(studentBorrows)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 5)
+                        .map(([id, count]) => ({ studentId: id, borrowCount: count }));
+                    
+                    const topBooks = Object.entries(bookBorrows)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 5)
+                        .map(([id, count]) => ({ bookId: id, borrowCount: count }));
+
+                    loadTopStudents(topStudents);
+                    loadTopBooks(topBooks);
+                    loadRecentActivity(records);
+                })
+                .catch(err => {
+                    console.log('Failed to load analytics:', err);
+                    alert('Failed to load analytics data');
+                });
+        }
+
+        // Load top students
+        function loadTopStudents(topStudents) {
+            const container = document.getElementById('top-students-container');
+
+            if (topStudents.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No borrowing data yet</p>';
+                return;
+            }
+
+            container.innerHTML = topStudents.map((item, index) => `
+                <div class="rank-item">
+                    <div class="rank-number">#${index + 1}</div>
+                    <div class="rank-info">
+                        <div class="rank-label">${item.studentId}</div>
+                        <div class="rank-value">Student ID</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary-orange); font-size: 1.2rem;">
+                        ${item.borrowCount} 📚
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load top books
+        function loadTopBooks(topBooks) {
+            const container = document.getElementById('top-books-container');
+
+            if (topBooks.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No book data yet</p>';
+                return;
+            }
+
+            container.innerHTML = topBooks.map((item, index) => `
+                <div class="rank-item">
+                    <div class="rank-number">#${index + 1}</div>
+                    <div class="rank-info">
+                        <div class="rank-label">${item.bookId}</div>
+                        <div class="rank-value">Book ID</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary-orange); font-size: 1.2rem;">
+                        ${item.borrowCount} ✓
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load recent activity
+        function loadRecentActivity(records) {
+            const tbody = document.getElementById('activity-tbody');
+
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No activity yet</td></tr>';
+                return;
+            }
+
+            const recentRecords = records.slice(-20).reverse();
+            tbody.innerHTML = recentRecords.map(record => {
+                const isOverdue = record.status === 'borrowed' && new Date(record.dueDate) < new Date();
+                const statusColor = record.status === 'returned' ? 'success' : 
+                                   (isOverdue ? 'danger' : 'info');
+
+                return `
+                    <tr>
+                        <td>${record.studentId}</td>
+                        <td>${record.bookId}</td>
+                        <td>${new Date(record.borrowDate).toLocaleDateString()}</td>
+                        <td>${new Date(record.dueDate).toLocaleDateString()}</td>
+                        <td><span class="badge badge-${statusColor}">
+                            ${record.status === 'returned' ? '✓ Returned' : 
+                              (isOverdue ? '⚠ Overdue' : '📖 Borrowed')}
+                        </span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+    </script>
+</body>
+</html>

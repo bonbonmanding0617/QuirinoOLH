@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .students-table {
+            background: var(--bg-white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-white);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .page-header {
+                flex-direction: column;
+            }
+
+            .search-filter {
+                flex-direction: column;
+            }
+
+            .search-filter input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>Student Management</span>
+            </div>
+            <div class="navbar-user">
+                <span id="admin-name" style="font-weight: 600; margin-right: 1rem;">Admin</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="admin-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="admin-students.html" class="active">👥 Student Management</a></li>
+                <li><a href="admin-books.html">📚 Books Management</a></li>
+                <li><a href="admin-ebooks.html">💾 eBooks Management</a></li>
+                <li><a href="admin-analytics.html">📈 Analytics</a></li>
+                <li><a href="admin-profile.html">👤 My Profile</a></li>
+                <li><a href="admin-settings.html">⚙️ Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h2 style="margin: 0;">👥 Student Management</h2>
+                <button class="btn btn-primary" onclick="openAddStudentModal()">➕ Add Student</button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <input type="text" id="search-input" placeholder="Search by name, email, or student ID..." onkeyup="searchStudents()">
+                <button class="btn btn-secondary" onclick="loadStudents()">🔍 Search</button>
+            </div>
+
+            <!-- Students Table -->
+            <div class="students-table">
+                <div class="table-responsive">
+                    <table id="students-table">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Students will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New Student</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form onsubmit="handleSaveStudent(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="student-name">Full Name</label>
+                        <input type="text" id="student-name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student-email">Email Address</label>
+                        <input type="email" id="student-email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student-phone">Phone Number</label>
+                        <input type="text" id="student-phone" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student-address">Address</label>
+                        <input type="text" id="student-address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student-schoolid">School ID (optional)</label>
+                        <input type="text" id="student-schoolid" placeholder="e.g. STU123">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student-password">Password</label>
+                        <input type="password" id="student-password" required minlength="6">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Student Information</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form onsubmit="handleUpdateStudent(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-student-id">
+
+                    <div class="form-group">
+                        <label for="edit-student-schoolid">School ID</label>
+                        <input type="text" id="edit-student-schoolid" disabled style="opacity: 0.6; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-student-name">Full Name</label>
+                        <input type="text" id="edit-student-name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-student-email">Email Address</label>
+                        <input type="email" id="edit-student-email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-student-phone">Phone Number</label>
+                        <input type="text" id="edit-student-phone" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-student-address">Address</label>
+                        <input type="text" id="edit-student-address" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Borrow Records Modal -->
+    <div id="borrowRecordsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="student-name-header">Student Borrow Records</h3>
+                <button class="close-btn" onclick="closeBorrowModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="borrow-records-container">
+                <!-- Borrow records will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeBorrowModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        let currentUser = null;
+        let allStudents = [];
+        let currentEditStudentId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'teacher')) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('admin-name').textContent = currentUser.name;
+            loadStudents();
+        });
+
+        // Load all students (try backend if token present, otherwise use localStorage)
+        async function loadStudents() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const res = await axios.get('http://localhost:3001/api/students', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    allStudents = res.data.students || [];
+                    displayStudents(allStudents);
+                    return;
+                } catch (err) {
+                    console.warn('Failed to load students from API, falling back to local DB', err);
+                }
+            }
+
+            allStudents = getAllStudents() || [];
+            displayStudents(allStudents);
+        }
+
+        // Listen for DB changes and reload students
+        window.addEventListener('databaseUpdated', function() {
+            loadStudents();
+        });
+
+        // Display students in table (defensive: handle varying property shapes)
+        function displayStudents(students) {
+            const tbody = document.getElementById('table-body');
+
+            if (!students || students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No students found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => {
+                const name = student.name || (student.firstName ? (student.firstName + ' ' + (student.lastName || '')) : (student.email || 'Unnamed'));
+                const email = student.email || '';
+                const phone = student.phone || '';
+                const address = student.address || '';
+                const schoolId = student.schoolId || (student.school_id || '');
+                const id = student.id || student._id || '';
+
+                return `
+                <tr>
+                    <td><strong>${schoolId}</strong></td>
+                    <td>${name}</td>
+                    <td>${email}</td>
+                    <td>${phone}</td>
+                    <td>${address}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-small btn-primary" onclick="openEditModal('${id}')">Edit</button>
+                            <button class="btn btn-small btn-secondary" onclick="viewBorrowRecords('${id}')">Records</button>
+                            <button class="btn btn-small btn-outline" onclick="deleteStudent('${id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        // Search students
+        function searchStudents() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allStudents.filter(student => {
+                const name = (student.name || (student.firstName ? (student.firstName + ' ' + (student.lastName || '')) : '')).toLowerCase();
+                const email = (student.email || '').toLowerCase();
+                const schoolId = (student.schoolId || student.school_id || '').toLowerCase();
+                return name.includes(query) || email.includes(query) || schoolId.includes(query);
+            });
+            displayStudents(filtered);
+        }
+
+        // Open add student modal
+        function openAddStudentModal() {
+            document.getElementById('modal-title').textContent = 'Add New Student';
+            document.getElementById('student-name').value = '';
+            document.getElementById('student-email').value = '';
+            document.getElementById('student-phone').value = '';
+            document.getElementById('student-address').value = '';
+            document.getElementById('student-schoolid').value = '';
+            document.getElementById('student-password').value = '';
+            currentEditStudentId = null;
+            document.getElementById('studentModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('studentModal').classList.remove('active');
+        }
+
+        // Handle save student - using backend API
+        function handleSaveStudent(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('student-name').value;
+            const email = document.getElementById('student-email').value;
+            const phone = document.getElementById('student-phone').value;
+            const address = document.getElementById('student-address').value;
+            const schoolId = document.getElementById('student-schoolid').value.trim();
+            const password = document.getElementById('student-password').value;
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/register', {
+                name,
+                email,
+                phone,
+                address,
+                schoolId: schoolId || undefined,
+                password,
+                role: 'student'
+            }, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('Student added successfully!', 'success');
+                        closeModal();
+                        loadStudents();
+                    } else {
+                        showNotification(res.data.error || 'Failed to add student', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
+        }
+
+        // Open edit modal
+        function openEditModal(studentId) {
+            // Try to find student from API-loaded list first
+            let student = allStudents.find(s => (s.id === studentId) || (s._id === studentId));
+            if (!student) student = getUserById(studentId);
+            if (!student) return;
+
+            document.getElementById('edit-student-id').value = student.id || student._id || '';
+            document.getElementById('edit-student-schoolid').value = student.schoolId || student.school_id || '';
+            document.getElementById('edit-student-name').value = student.name || (student.firstName ? (student.firstName + ' ' + (student.lastName || '')) : '');
+            document.getElementById('edit-student-email').value = student.email || '';
+            document.getElementById('edit-student-phone').value = student.phone || '';
+            document.getElementById('edit-student-address').value = student.address || '';
+            currentEditStudentId = studentId;
+
+            document.getElementById('editStudentModal').classList.add('active');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editStudentModal').classList.remove('active');
+        }
+
+        // Handle update student
+        function handleUpdateStudent(event) {
+            event.preventDefault();
+
+            const updates = {
+                name: document.getElementById('edit-student-name').value,
+                email: document.getElementById('edit-student-email').value,
+                phone: document.getElementById('edit-student-phone').value,
+                address: document.getElementById('edit-student-address').value
+            };
+
+            const updated = updateUser(currentEditStudentId, updates);
+            if (updated) {
+                showNotification('Student updated successfully!', 'success');
+                closeEditModal();
+                loadStudents();
+            } else {
+                showNotification('Failed to update student', 'danger');
+            }
+        }
+
+        // Delete student
+        function deleteStudent(studentId) {
+            if (!confirm('Are you sure you want to delete this student?')) return;
+
+            const student = getUserById(studentId);
+            if (student) {
+                const db = getDatabase();
+                db.users = db.users.filter(u => u.id !== studentId);
+                saveDatabase(db);
+
+                showNotification('Student deleted successfully!', 'success');
+                loadStudents();
+            }
+        }
+
+        // View borrow records
+        function viewBorrowRecords(studentId) {
+            let student = allStudents.find(s => (s.id === studentId) || (s._id === studentId));
+            if (!student) student = getUserById(studentId);
+            if (!student) return;
+
+            const records = getStudentBorrowRecords(studentId);
+            const displayName = student.name || (student.firstName ? (student.firstName + ' ' + (student.lastName || '')) : (student.email || 'Student'));
+            document.getElementById('student-name-header').textContent = displayName + ' - Borrow Records';
+
+            const container = document.getElementById('borrow-records-container');
+
+            if (records.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7F8C8D;">No borrow records</p>';
+            } else {
+                const html = records.map(record => {
+                    const book = getBookById(record.bookId);
+                    const isOverdue = record.status === 'borrowed' && isOverdue(record.dueDate);
+
+                    return `
+                        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                                <strong>${book ? book.title : 'Unknown Book'}</strong>
+                                <span class="badge badge-${record.status === 'returned' ? 'success' : (isOverdue ? 'danger' : 'info')}">
+                                    ${record.status === 'returned' ? '✓ Returned' : (isOverdue ? '⚠ Overdue' : '📖 Borrowed')}
+                                </span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; font-size: 0.9rem; margin-bottom: 1rem;">
+                                <div><label>Borrowed:</label> ${formatDate(record.borrowDate)}</div>
+                                <div><label>Due:</label> ${formatDate(record.dueDate)}</div>
+                                ${record.status === 'returned' ? `<div><label>Returned:</label> ${formatDate(record.returnDate)}</div>` : ''}
+                            </div>
+                            ${record.status === 'borrowed' && isOverdue ? `
+                                <button class="btn btn-small btn-danger" onclick="forceReturnBook('${record.id}')">⚠️ Force Return</button>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = html;
+            }
+
+            document.getElementById('borrowRecordsModal').classList.add('active');
+        }
+
+        // Close borrow records modal
+        function closeBorrowModal() {
+            document.getElementById('borrowRecordsModal').classList.remove('active');
+        }
+
+        // Force return book
+        function forceReturnBook(borrowRecordId) {
+            if (!confirm('Issue a force return for this book?')) return;
+
+            const result = window.forceReturnBook(borrowRecordId);
+            if (result.success) {
+                showNotification(result.message, 'success');
+                // Refresh the records
+                const record = getBorrowRecordById(borrowRecordId);
+                if (record) {
+                    viewBorrowRecords(record.studentId);
+                }
+            } else {
+                showNotification(result.message, 'danger');
+            }
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('studentModal');
+            const editModal = document.getElementById('editStudentModal');
+            const borrowModal = document.getElementById('borrowRecordsModal');
+
+            if (event.target === modal) closeModal();
+            if (event.target === editModal) closeEditModal();
+            if (event.target === borrowModal) closeBorrowModal();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBooks Management - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+
+        .admin-sidebar {
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--very-light-orange);
+            border-left-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .ebooks-table {
+            background: var(--bg-white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-white);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .page-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../Logo/1000.png" alt="QOLH Logo" style="height: 40px;">
+                <span>eBooks Management</span>
+            </div>
+            <div class="navbar-user">
+                <span id="admin-name" style="font-weight: 600; margin-right: 1rem;">Admin</span>
+                <button onclick="handleLogout()" class="btn btn-small btn-outline">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="admin-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="admin-students.html">👥 Student Management</a></li>
+                <li><a href="admin-books.html">📚 Books Management</a></li>
+                <li><a href="admin-ebooks.html" class="active">💾 eBooks Management</a></li>
+                <li><a href="admin-analytics.html">📈 Analytics</a></li>
+                <li><a href="admin-profile.html">👤 My Profile</a></li>
+                <li><a href="admin-settings.html">⚙️ Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h2 style="margin: 0;">💾 eBooks Management</h2>
+                <button class="btn btn-primary" onclick="openAddEbookModal()">➕ Upload eBook</button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <input type="text" id="search-input" placeholder="Search by title or author..." onkeyup="searchEbooks()">
+                <button class="btn btn-secondary" onclick="loadEbooks()">🔍 Search</button>
+            </div>
+
+            <!-- eBooks Table -->
+            <div class="ebooks-table">
+                <div class="table-responsive">
+                    <table id="ebooks-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>Downloads</th>
+                                <th>Added Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- eBooks will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit eBook Modal -->
+    <div id="ebookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Upload New eBook</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form onsubmit="handleSaveEbook(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="ebook-title">eBook Title</label>
+                        <input type="text" id="ebook-title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ebook-author">Author</label>
+                        <input type="text" id="ebook-author" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ebook-category">Category</label>
+                        <input type="text" id="ebook-category" required placeholder="e.g., Technology, Literature">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ebook-description">Description</label>
+                        <textarea id="ebook-description" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ebook-file">File Path/URL</label>
+                        <input type="text" id="ebook-file" required placeholder="uploads/ebooks/filename.pdf">
+                        <small style="color: #7F8C8D;">Note: Files should be in uploads/ebooks/ directory</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload eBook</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit eBook Modal -->
+    <div id="editEbookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit eBook Information</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form onsubmit="handleUpdateEbook(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-ebook-id">
+
+                    <div class="form-group">
+                        <label for="edit-ebook-title">eBook Title</label>
+                        <input type="text" id="edit-ebook-title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-ebook-author">Author</label>
+                        <input type="text" id="edit-ebook-author" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-ebook-category">Category</label>
+                        <input type="text" id="edit-ebook-category" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-ebook-description">Description</label>
+                        <textarea id="edit-ebook-description" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-ebook-file">File Path/URL</label>
+                        <input type="text" id="edit-ebook-file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update eBook</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/script.js"></script>
+    <script>
+        let currentUser = null;
+        let allEbooks = [];
+        let currentEditEbookId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            currentUser = getCurrentUser();
+
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'teacher')) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            document.getElementById('admin-name').textContent = currentUser.name;
+            loadEbooks();
+        });
+
+        // Load all eBooks from backend
+        function loadEbooks() {
+            const token = localStorage.getItem('token');
+            axios.get('http://localhost:3001/api/ebooks', {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    allEbooks = res.data.ebooks.map(e => ({ ...e, id: e._id, addedAt: e.createdAt }));
+                    displayEbooks(allEbooks);
+                })
+                .catch(err => showNotification('Failed to load eBooks', 'danger'));
+        }
+
+        // Display eBooks in table
+        function displayEbooks(ebooks) {
+            const tbody = document.getElementById('table-body');
+
+            if (ebooks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No eBooks found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = ebooks.map(ebook => `
+                <tr>
+                    <td><strong>${ebook.title}</strong></td>
+                    <td>${ebook.author}</td>
+                    <td>${ebook.category}</td>
+                    <td><span class="badge badge-info">${ebook.downloads}</span></td>
+                    <td>${formatDate(ebook.addedAt)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-small btn-primary" onclick="openEditModal('${ebook.id}')">Edit</button>
+                            <button class="btn btn-small btn-outline" onclick="deleteEbook('${ebook.id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search eBooks
+        function searchEbooks() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allEbooks.filter(ebook =>
+                ebook.title.toLowerCase().includes(query) ||
+                ebook.author.toLowerCase().includes(query)
+            );
+            displayEbooks(filtered);
+        }
+
+        // Open add eBook modal
+        function openAddEbookModal() {
+            document.getElementById('modal-title').textContent = 'Upload New eBook';
+            document.getElementById('ebook-title').value = '';
+            document.getElementById('ebook-author').value = '';
+            document.getElementById('ebook-category').value = '';
+            document.getElementById('ebook-description').value = '';
+            document.getElementById('ebook-file').value = '';
+            currentEditEbookId = null;
+            document.getElementById('ebookModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('ebookModal').classList.remove('active');
+        }
+
+        // Handle save eBook - using backend API
+        function handleSaveEbook(event) {
+            event.preventDefault();
+
+            const ebookData = {
+                title: document.getElementById('ebook-title').value,
+                author: document.getElementById('ebook-author').value,
+                category: document.getElementById('ebook-category').value,
+                description: document.getElementById('ebook-description').value,
+                filePath: document.getElementById('ebook-file').value
+            };
+
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3001/api/ebooks', ebookData, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('eBook uploaded successfully!', 'success');
+                        closeModal();
+                        loadEbooks();
+                    } else {
+                        showNotification(res.data.error || 'Failed to upload eBook', 'danger');
+                    }
+                })
+                .catch(err => showNotification(err.response?.data?.error || 'Connection error', 'danger'));
+        }
+
+        // Open edit modal
+        function openEditModal(ebookId) {
+            const ebook = getEbookById(ebookId);
+            if (!ebook) return;
+
+            document.getElementById('edit-ebook-id').value = ebook.id;
+            document.getElementById('edit-ebook-title').value = ebook.title;
+            document.getElementById('edit-ebook-author').value = ebook.author;
+            document.getElementById('edit-ebook-category').value = ebook.category;
+            document.getElementById('edit-ebook-description').value = ebook.description;
+            document.getElementById('edit-ebook-file').value = ebook.filePath;
+            currentEditEbookId = ebookId;
+
+            document.getElementById('editEbookModal').classList.add('active');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editEbookModal').classList.remove('active');
+        }
+
+        // Handle update eBook - using backend API
+        function handleUpdateEbook(event) {
+            event.preventDefault();
+
+            const ebookId = document.getElementById('edit-ebook-id').value;
+            const updates = {
+                title: document.getElementById('edit-ebook-title').value,
+                author: document.getElementById('edit-ebook-author').value,
+                category: document.getElementById('edit-ebook-category').value,
+                description: document.getElementById('edit-ebook-description').value,
+                filePath: document.getElementById('edit-ebook-file').value
+            };
+
+            const token = localStorage.getItem('token');
+            axios.put('http://localhost:3001/api/ebooks/' + ebookId, updates, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+                .then(res => {
+                    if (res.data.success) {
+                        showNotification('eBook updated successfully!', 'success');
+                        closeEditModal();
+                        loadEbooks();
+                    } else {
+                        showNotification(res.data.error || 'Failed to update eBook', 'danger');
+                    }
+                })
+                .catch(err => showNotification(err.response?.data?.error || 'Connection error', 'danger'));
+        }
+
+        // Delete eBook
+        function deleteEbook(ebookId) {
+            if (!confirm('Are you sure you want to delete this eBook?')) return;
+
+            window.deleteEbook(ebookId);
+            showNotification('eBook deleted successfully!', 'success');
+            loadEbooks();
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('ebookModal');
+            const editModal = document.getElementById('editEbookModal');
+
+            if (event.target === modal) closeModal();
+            if (event.target === editModal) closeEditModal();
+        };
+    </script>
+</body>
+</html>

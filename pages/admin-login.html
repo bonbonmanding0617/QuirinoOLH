@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Quirino Online Library Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--secondary-orange) 0%, var(--dark-orange) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--secondary-orange) 0%, var(--dark-orange) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-header img {
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        .login-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .login-header p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0 0;
+            font-size: 0.95rem;
+        }
+
+        .login-content {
+            padding: 2rem;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-option {
+            position: relative;
+        }
+
+        .role-option input[type="radio"] {
+            display: none;
+        }
+
+        .role-option label {
+            display: block;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .role-option input[type="radio"]:checked + label {
+            border-color: var(--primary-orange);
+            background-color: var(--very-light-orange);
+            color: var(--primary-orange);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+            color: #7F8C8D;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .back-link a {
+            color: var(--primary-orange);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .navbar {
+            display: none;
+        }
+
+        .demo-credentials {
+            background-color: var(--very-light-orange);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .demo-credentials h4 {
+            color: var(--primary-orange);
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .demo-credentials p {
+            margin: 0.25rem 0;
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Header -->
+        <div class="login-header">
+            <img src="https://sdo-quirino.com.ph/wp-content/uploads/2017/12/DO-Quirino-New-Logo-600-x-600.png" alt="QOLH Logo">
+            <h2>Administrator Portal</h2>
+            <p>Teacher & Admin Access</p>
+        </div>
+
+        <!-- Content -->
+        <div class="login-content">
+            <!-- Demo Credentials -->
+            <div class="demo-credentials">
+                <h4>📌 Demo Credentials</h4>
+                <p><strong>Admin:</strong> admin@qolh.com / admin123</p>
+                <p><strong>Teacher:</strong> teacher1@qolh.com / teacher123</p>
+            </div>
+
+            <!-- Role Selector -->
+            <div class="form-section">
+                <label style="display: block; margin-bottom: 1rem; font-weight: 600;">Select Role</label>
+                <div class="role-selector">
+                    <div class="role-option">
+                        <input type="radio" id="role-admin" name="role" value="admin" checked>
+                        <label for="role-admin">
+                            👨‍💼<br>Administrator
+                        </label>
+                    </div>
+                    <div class="role-option">
+                        <input type="radio" id="role-teacher" name="role" value="teacher">
+                        <label for="role-teacher">
+                            👨‍🏫<br>Teacher
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label for="admin-email">Email Address</label>
+                    <input type="email" id="admin-email" name="email" required placeholder="your@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-password">Password</label>
+                    <input type="password" id="admin-password" name="password" required placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Login to Dashboard</button>
+            </form>
+
+            <!-- Back Link -->
+            <div class="back-link">
+                <p style="margin: 0 0 1rem 0; color: var(--text-dark);">Are you a student?</p>
+                <a href="student-login.html">Go to Student Login</a>
+                <br><br>
+                <a href="../index.html">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/script.js"></script>
+    <script>
+        function handleAdminLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+
+            axios.post('http://localhost:3001/api/login', { email, password, role })
+                .then(res => {
+                    if (res.data.success) {
+                        localStorage.setItem('token', res.data.token);
+                        localStorage.setItem('currentUser', JSON.stringify(res.data.user));
+                        setCurrentUser(res.data.user);
+                        showNotification('Login successful! Redirecting to dashboard...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'admin-dashboard.html';
+                        }, 1500);
+                    } else {
+                        showNotification(res.data.error || 'Login failed', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showNotification(err.response?.data?.error || 'Connection error', 'danger');
+                });
+        }
+    </script>
+</body>
+</html>
