@@ -5,6 +5,11 @@ const path = require('path');
 
 function getTrackedFiles() {
   try {
+    // Check staged files (pre-commit) or all tracked files if none staged
+    const staged = execSync('git diff --cached --name-only --diff-filter=ACM', { encoding: 'utf8' }).trim();
+    if (staged) {
+      return staged.split('\n').filter(Boolean);
+    }
     const out = execSync('git ls-files', { encoding: 'utf8' });
     return out.split('\n').filter(Boolean);
   } catch (e) {
@@ -41,11 +46,20 @@ const patterns = [
 ];
 
 const files = getTrackedFiles();
+// Exclude some default benign files/patterns and directories
+const EXCLUDE = ['node_modules/', '.git/', '.husky/', 'README.md', 'SECURE_SECRETS.md', 'scripts/'];
+
+function shouldIgnore(file) {
+  for (const e of EXCLUDE) if (file.indexOf(e) === 0 || file.includes('/' + e) || file === e) return true;
+  if (file.endsWith('.md') || file.endsWith('.lock')) return true;
+  return false;
+}
 let found = false;
 for (const f of files) {
   try {
     if (!fs.existsSync(f)) continue;
     const content = fs.readFileSync(f, 'utf8');
+    if (shouldIgnore(f)) continue;
     for (const pat of patterns) {
       if (pat.test(content)) {
         console.error(`Potential secret in file: ${f} -- matched ${pat}`);
