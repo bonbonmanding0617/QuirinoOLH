@@ -423,14 +423,24 @@ app.put('/api/borrow/:id/return', auth, async (req, res) => {
 
 // Get student borrow records
 app.get('/api/borrow/student/:studentId', async (req, res) => {
-  const records = await BorrowRecord.find({ studentId: req.params.studentId });
-  res.json({ records });
+  try {
+    const records = await BorrowRecord.find({ studentId: req.params.studentId });
+    res.json({ records });
+  } catch (err) {
+    console.error('Error fetching student borrow records:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch borrow records', details: err.message });
+  }
 });
 
 // Get all borrow records
 app.get('/api/borrow', async (req, res) => {
-  const records = await BorrowRecord.find();
-  res.json({ records });
+  try {
+    const records = await BorrowRecord.find();
+    res.json({ records });
+  } catch (err) {
+    console.error('Error fetching all borrow records:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch borrow records', details: err.message });
+  }
 });
 
 // ===== START SERVER =====
