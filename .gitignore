@@ -12,3 +12,4 @@ payload*.json
 get_*.json
 delete_response.json
 *.env
+.vs/

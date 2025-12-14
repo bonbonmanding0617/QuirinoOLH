@@ -8,7 +8,14 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
-require('dotenv').config();
+const fs = require('fs');
+const dotenv = require('dotenv');
+// Prefer `.env.local` for local developer secrets (kept out of VCS), fall back to default `.env`.
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+} else {
+  dotenv.config();
+}
 const express = require('express');
 const mongoose = require('mongoose');
 const { MongoClient, ServerApiVersion } = require('mongodb');
@@ -20,8 +27,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Atlas connection
-const uri = process.env.MONGO_URI || "mongodb+srv://bonbonmanding23_db_user:bNVcNiLhhct4yAYV@cluster0.uhfvung.mongodb.net/qolh?retryWrites=true&w=majority";
+// MongoDB connection
+// Prefer an explicit `MONGO_URI` provided via environment or secrets manager.
+// If not present, fall back to a local MongoDB instance for safe local development.
+const FALLBACK_LOCAL_URI = 'mongodb://127.0.0.1:27017/qolh';
+let uri = process.env.MONGO_URI || FALLBACK_LOCAL_URI;
+// Validate URI for common user mistakes (e.g. left-over placeholders like <cluster>)
+if (typeof uri === 'string' && /[<>]/.test(uri)) {
+  console.error('⚠️  Invalid MONGO_URI: contains angle-bracket placeholders (< or >).');
+  console.error('Please replace placeholders with your actual cluster host. Example:');
+  console.error("  mongodb+srv:[//]<user>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority");
+  process.exit(1);
+}
+if (!process.env.MONGO_URI) {
+  console.warn('⚠️  No MONGO_URI environment variable found. Using local fallback for development.');
+  console.warn('⚠️  Do NOT commit credentials into source. Use environment variables or a secrets manager.');
+}
 
 mongoose.connect(uri, {
   useNewUrlParser: true,
@@ -30,16 +51,28 @@ mongoose.connect(uri, {
   socketTimeoutMS: 45000
 })
 .then(() => {
-  console.log('✅ MongoDB Atlas connected successfully!');
+  console.log('✅ MongoDB connected successfully!');
   // Ensure admin account exists
   ensureAdmin().catch(err => console.warn('Error ensuring admin user:', err.message));
 })
 .catch(err => {
   console.warn('⚠️  MongoDB connection failed:', err.message);
+  if (err.message && err.message.toLowerCase().includes('auth')) {
+    console.warn('🔐 Authentication error connecting to MongoDB. Check that MONGO_URI is correct and credentials are valid.');
+  }
+  // Handle DNS SRV resolution errors (common when using placeholder hostnames or when DNS lookup fails)
+  if (err.message && /querySrv|EBADNAME|ENOTFOUND|EAI_AGAIN/i.test(err.message)) {
+    console.warn('🛠️  SRV/DNS lookup failed when using an `mongodb+srv:[//]` style URI. Common causes:');
+    console.warn('- The MONGO_URI contains a placeholder like `<cluster>` (replace it with your cluster host).');
+    console.warn('- DNS is blocking SRV lookups. Try using the standard `mongodb://host:port` connection string instead.');
+    console.warn('- Ensure your network/DNS supports SRV lookups (some corporate networks block them).');
+    console.warn('If you recently copied the example connection string, replace the `<cluster>` placeholder with the actual cluster name shown in Atlas.');
+  }
   console.warn('📝 Troubleshooting:');
-  console.warn('1. Check IP is whitelisted in Network Access');
+  console.warn('1. If using Atlas, ensure your IP is whitelisted in Network Access');
   console.warn('2. Verify cluster is not paused');
   console.warn('3. Check internet connection');
+  console.warn('4. If using a connection string, ensure it is set in the MONGO_URI environment variable or in a .env file');
 });
 
 // ===== SCHEMAS =====
@@ -61,22 +94,26 @@ const User = mongoose.model('User', userSchema);
 async function ensureAdmin() {
   try {
     const adminEmail = 'emily.pascua002@deped.gov.ph';
-    const existing = await User.findOne({ email: adminEmail });
-    if (existing) {
-      console.log('Admin user already exists:', adminEmail);
-      return;
-    }
     const plain = 'Emp.082289';
     const hash = await bcrypt.hash(plain, 10);
-    const admin = await User.create({
+
+    const update = {
       name: 'Emily Pascua',
       email: adminEmail,
       password: hash,
       role: 'admin'
-    });
-    console.log('Created admin user:', adminEmail);
+    };
+
+    const opts = { upsert: true, new: true, setDefaultsOnInsert: true };
+
+    const admin = await User.findOneAndUpdate({ email: adminEmail }, update, opts);
+    if (admin) {
+      console.log('✅ Ensured admin user exists:', adminEmail);
+    } else {
+      console.log('✅ Created admin user:', adminEmail);
+    }
   } catch (err) {
-    console.warn('Failed to create admin user:', err.message);
+    console.warn('Failed to ensure admin user:', err.message);
   }
 }
 
@@ -559,7 +596,7 @@ app.delete('/api/teachers/:id', auth, async (req, res) => {
 // Create change request (teacher requesting book/ebook modification)
 app.post('/api/change-requests', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'teacher') {
       return res.status(403).json({ success: false, error: 'Only teachers can request changes' });
     }
@@ -588,7 +625,7 @@ app.post('/api/change-requests', auth, async (req, res) => {
 // Get pending change requests (admin only)
 app.get('/api/change-requests/pending', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Only admins can view change requests' });
     }
@@ -603,7 +640,7 @@ app.get('/api/change-requests/pending', auth, async (req, res) => {
 // Get all change requests (admin only)
 app.get('/api/change-requests', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Only admins can view change requests' });
     }
@@ -618,7 +655,7 @@ app.get('/api/change-requests', auth, async (req, res) => {
 // Approve change request (admin only)
 app.put('/api/change-requests/:id/approve', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Only admins can approve requests' });
     }
@@ -667,7 +704,7 @@ app.put('/api/change-requests/:id/approve', auth, async (req, res) => {
 // Reject change request (admin only)
 app.put('/api/change-requests/:id/reject', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Only admins can reject requests' });
     }

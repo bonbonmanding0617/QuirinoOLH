@@ -54,6 +54,13 @@ async function main() {
     process.exit(1);
   }
 
+  // Basic validation: ensure the secret doesn't contain placeholder angle brackets
+  if (/[<>]/.test(value)) {
+    console.error('Fetched MONGO_URI looks like it contains placeholders (e.g. <cluster> or <password>).');
+    console.error('Please update the secret to include the actual cluster host, user and password.');
+    process.exit(1);
+  }
+
   // Write to .env.local for the runner / container; do not print the value directly
   const outPath = path.resolve(process.cwd(), '.env.local');
   const content = `MONGO_URI=${value}\n`;

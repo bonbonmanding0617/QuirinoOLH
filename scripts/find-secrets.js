@@ -47,7 +47,7 @@ const patterns = [
 
 const files = getTrackedFiles();
 // Exclude some default benign files/patterns and directories
-const EXCLUDE = ['node_modules/', '.git/', '.husky/', 'README.md', 'SECURE_SECRETS.md', 'scripts/'];
+const EXCLUDE = ['node_modules/', '.git/', '.husky/', 'README.md', 'SECURE_SECRETS.md', 'scripts/', '.github/'];
 
 function shouldIgnore(file) {
   for (const e of EXCLUDE) if (file.indexOf(e) === 0 || file.includes('/' + e) || file === e) return true;

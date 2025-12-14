@@ -1,0 +1,42 @@
+name: Fetch secrets and deploy (example)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        provider: [azure, aws]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch secret and write .env.local (provider: ${{ matrix.provider }})
+        env:
+          # Azure: set AZURE_KEY_VAULT_NAME and AZURE_CREDENTIALS (service principal JSON)
+          AZURE_KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          # AWS: set AWS credentials and secret name
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SECRET_NAME: ${{ secrets.AWS_SECRET_NAME }}
+        run: |
+          # Install deps
+          npm ci
+          # run fetch script (it writes .env.local with MONGO_URI)
+          node scripts/fetch-secret.js --provider ${{ matrix.provider }} --name ${SECRET_NAME:-MONGO_URI}
+
+      - name: Build and Deploy (placeholder)
+        run: |
+          echo "Secrets fetched into .env.local. Implement deploy steps (e.g. scp, az webapp deploy, aws ecs deploy) here."

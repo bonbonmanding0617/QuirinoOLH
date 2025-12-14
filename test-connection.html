@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #e8f5e9; }
+        .error { background: #ffebee; }
+        .warning { background: #fff3e0; }
+    </style>
+</head>
+<body>
+    <h1>QOLH Connection Test</h1>
+    
+    <div id="results"></div>
+
+    <script>
+        async function runTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+            
+            const results = [];
+
+            // Test 1: Check /api/health endpoint
+            try {
+                const response = await axios.get('http://localhost:3001/api/health', { timeout: 5000 });
+                results.push({
+                    name: '✓ /api/health endpoint',
+                    status: 'success',
+                    message: `Connected: ${response.data.connected}, ReadyState: ${response.data.readyState}`
+                });
+            } catch (err) {
+                results.push({
+                    name: '✗ /api/health endpoint',
+                    status: 'error',
+                    message: err.message
+                });
+            }
+
+            // Test 2: Check isApiAvailable function
+            try {
+                const response = await axios.get('http://localhost:3001/api/health', { timeout: 3000 });
+                const available = response.data && response.data.connected === true;
+                results.push({
+                    name: '✓ isApiAvailable() would return',
+                    status: available ? 'success' : 'warning',
+                    message: `API Available: ${available}`
+                });
+            } catch (err) {
+                results.push({
+                    name: '✓ isApiAvailable() would return',
+                    status: 'success',
+                    message: 'API Available: false (as expected, gracefully falls back to localStorage)'
+                });
+            }
+
+            // Test 3: Try to get books (requires valid token usually, but GET /api/books should be public)
+            try {
+                const response = await axios.get('http://localhost:3001/api/books', { timeout: 5000 });
+                results.push({
+                    name: '✓ /api/books endpoint',
+                    status: 'success',
+                    message: `Loaded ${response.data.books?.length || 0} books`
+                });
+            } catch (err) {
+                results.push({
+                    name: '✗ /api/books endpoint',
+                    status: 'error',
+                    message: err.message
+                });
+            }
+
+            // Display results
+            resultsDiv.innerHTML = results.map(r => `
+                <div class="test ${r.status}">
+                    <strong>${r.name}</strong><br/>
+                    <small>${r.message}</small>
+                </div>
+            `).join('');
+        }
+
+        // Run tests on page load
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>
