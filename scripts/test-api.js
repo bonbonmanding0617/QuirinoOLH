@@ -7,7 +7,7 @@
       process.exit(1);
     }
 
-    const login = await fetch('http://localhost:3001/api/login',{
+    const login = await fetch('http://localhost:3000/api/login',{
       method:'POST',
       headers:{'content-type':'application/json'},
       body: JSON.stringify({email: adminEmail, password: adminPassword})
@@ -18,7 +18,7 @@
       process.exit(1);
     }
     console.log('Login OK');
-    const r = await fetch('http://localhost:3001/api/change-requests', { headers: { Authorization: 'Bearer '+l.token } });
+    const r = await fetch('http://localhost:3000/api/change-requests', { headers: { Authorization: 'Bearer '+l.token } });
     const rr = await r.json();
     console.log('Requests:', (rr.requests||rr).length);
   } catch (e) {

@@ -284,7 +284,7 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
-            axios.post('http://localhost:3001/api/login', { email, password, role: 'student' })
+            axios.post('http://localhost:3000/api/login', { email, password, role: 'student' })
                 .then(res => {
                     if (res.data.success) {
                         localStorage.setItem('token', res.data.token);
@@ -321,7 +321,7 @@
                 return;
             }
 
-            axios.post('http://localhost:3001/api/register', {
+            axios.post('http://localhost:3000/api/register', {
                 name,
                 email,
                 phone,
@@ -366,3 +366,4 @@
     </script>
 </body>
 </html>
+

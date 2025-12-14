@@ -228,7 +228,7 @@
             const password = document.getElementById('admin-password').value;
             const role = document.querySelector('input[name="role"]:checked').value;
 
-            axios.post('http://localhost:3001/api/login', { email, password, role })
+            axios.post('http://localhost:3000/api/login', { email, password, role })
                 .then(res => {
                     if (res.data.success) {
                         localStorage.setItem('token', res.data.token);
@@ -257,3 +257,4 @@
     </script>
 </body>
 </html>
+

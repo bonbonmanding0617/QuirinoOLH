@@ -286,7 +286,7 @@
             const token = localStorage.getItem('token');
             
             // Load students count
-            axios.get('http://localhost:3001/api/students', {
+            axios.get('http://localhost:3000/api/students', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -295,21 +295,21 @@
                 .catch(err => console.log('Failed to load students'));
             
             // Load books count
-            axios.get('http://localhost:3001/api/books')
+            axios.get('http://localhost:3000/api/books')
                 .then(res => {
                     document.getElementById('total-books').textContent = res.data.books.length;
                 })
                 .catch(err => console.log('Failed to load books'));
             
             // Load eBooks count
-            axios.get('http://localhost:3001/api/ebooks')
+            axios.get('http://localhost:3000/api/ebooks')
                 .then(res => {
                     document.getElementById('total-ebooks').textContent = res.data.ebooks.length;
                 })
                 .catch(err => console.log('Failed to load ebooks'));
             
             // Load borrow records
-            axios.get('http://localhost:3001/api/borrow', {
+            axios.get('http://localhost:3000/api/borrow', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -333,7 +333,7 @@
         function loadRecentActivities() {
             const token = localStorage.getItem('token');
             
-            axios.get('http://localhost:3001/api/borrow', {
+            axios.get('http://localhost:3000/api/borrow', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -388,3 +388,4 @@
     </script>
 </body>
 </html>
+

@@ -112,7 +112,7 @@ export interface AppConfig {
 
 const CONFIG: AppConfig = {
   API: {
-    BASE_URL: 'http://localhost:3001/api',
+    BASE_URL: 'http://localhost:3000/api',
     TIMEOUT: 30000,
     RETRY_COUNT: 3
   },
