@@ -28,27 +28,23 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-// Prefer an explicit `MONGO_URI` provided via environment or secrets manager.
-// If not present, fall back to a local MongoDB instance for safe local development.
-const FALLBACK_LOCAL_URI = 'mongodb://127.0.0.1:27017/qolh';
-let uri = process.env.MONGO_URI || FALLBACK_LOCAL_URI;
-// Validate URI for common user mistakes (e.g. left-over placeholders like <cluster>)
-if (typeof uri === 'string' && /[<>]/.test(uri)) {
-  console.error('⚠️  Invalid MONGO_URI: contains angle-bracket placeholders (< or >).');
-  console.error('Please replace placeholders with your actual cluster host. Example:');
-  console.error("  mongodb+srv:[//]<user>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority");
+// Read from environment variable (set in .env or deployment platform)
+const uri = process.env.MONGO_URI;
+if (!uri) {
+  console.error('❌ MONGO_URI environment variable not set. Cannot connect to MongoDB.');
   process.exit(1);
-}
-if (!process.env.MONGO_URI) {
-  console.warn('⚠️  No MONGO_URI environment variable found. Using local fallback for development.');
-  console.warn('⚠️  Do NOT commit credentials into source. Use environment variables or a secrets manager.');
 }
 
 mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 10000,
-  socketTimeoutMS: 45000
+  socketTimeoutMS: 45000,
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 })
 .then(() => {
   console.log('✅ MongoDB connected successfully!');
