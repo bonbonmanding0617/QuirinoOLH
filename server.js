@@ -93,12 +93,18 @@ const User = mongoose.model('User', userSchema);
 // Ensure admin user exists (created after DB connection)
 async function ensureAdmin() {
   try {
-    const adminEmail = 'emily.pascua002@deped.gov.ph';
-    const plain = 'Emp.082289';
-    const hash = await bcrypt.hash(plain, 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'emily.pascua002@deped.gov.ph';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      console.warn('⚠️  ADMIN_PASSWORD is not set. Skipping automatic admin creation.');
+      console.warn('To create an admin, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` and restart, or run `node scripts/create-admin.js`.');
+      return;
+    }
+
+    const hash = await bcrypt.hash(adminPassword, 10);
 
     const update = {
-      name: 'Emily Pascua',
+      name: process.env.ADMIN_NAME || 'Emily Pascua',
       email: adminEmail,
       password: hash,
       role: 'admin'

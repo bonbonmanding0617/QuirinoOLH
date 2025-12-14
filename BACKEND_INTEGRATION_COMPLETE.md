@@ -178,8 +178,8 @@ All pages in the Quirino Online Library Hub have been successfully integrated wi
    ```
 
 2. **Login Credentials for Testing:**
-   - **Admin:** email: `admin@qolh.com`, password: `admin123`
-   - **Teacher:** email: `teacher@qolh.com`, password: `teacher123`
+   - **Admin:** email: `admin@qolh.com`, password: `(set ADMIN_PASSWORD or run scripts/create-admin.js)`
+   - **Teacher:** email: `teacher@qolh.com`, password: `(example placeholder)`
    - **Student:** Create new account during signup
 
 ---

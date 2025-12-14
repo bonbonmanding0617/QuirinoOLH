@@ -46,17 +46,17 @@ QOLH/
 
 **Administrator Account:**
 - Email: `admin@qolh.com`
-- Password: `admin123`
+- Password: `(use ADMIN_PASSWORD or run scripts/create-admin.js)`
 - Role: Full system access
 
 **Teacher Account:**
 - Email: `teacher1@qolh.com`
-- Password: `teacher123`
+- Password: `(example placeholder)`
 - Role: Student management and monitoring
 
 **Student Account (Sample):**
 - Email: `student@qolh.com`
-- Password: `student123`
+- Password: `(example placeholder)`
 - Role: Borrow books, read eBooks
 
 ### 3. Creating New Accounts
@@ -414,3 +414,4 @@ This project is created for Quirino Province Educational Institution.
 "# QuirinoOnlineLibHub-Mongodb-" 
 "# QuirinoOnlineLibHub-Mongodb-" 
 "# QuirinoOnlineLibHub-Mongodb-" 
+"# QOLH" 
