@@ -731,7 +731,7 @@ app.put('/api/change-requests/:id/reject', auth, async (req, res) => {
 });
 
 // ===== START SERVER =====
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Serve static files from the root directory
 app.use(express.static(__dirname));
