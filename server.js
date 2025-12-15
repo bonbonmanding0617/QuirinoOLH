@@ -78,10 +78,19 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
-  role: { type: String, default: 'student' },
+  role: { type: String, default: 'student' }, // 'student', 'teacher', 'admin', 'super-admin'
+  age: Number,
+  birthday: Date,
+  address: {
+    province: { type: String, default: 'Quirino' }, // always Quirino, unchangeable
+    municipality: {
+      type: String,
+      enum: ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'],
+      required: true
+    }
+  },
   schoolId: String,
   phone: String,
-  address: String,
   createdAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
@@ -191,10 +200,30 @@ function auth(req, res, next) {
 
 // Register
 app.post('/api/register', async (req, res) => {
-  const { name, email, password, role, schoolId, phone, address } = req.body;
+  const { name, email, password, role, schoolId, phone, age, birthday, address } = req.body;
   const hash = await bcrypt.hash(password, 10);
   try {
-    const user = await User.create({ name, email, password: hash, role, schoolId, phone, address });
+    // Validate municipality if provided
+    const validMunicipalities = ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'];
+    const municipality = address?.municipality;
+    if (municipality && !validMunicipalities.includes(municipality)) {
+      return res.status(400).json({ success: false, error: 'Invalid municipality' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password: hash,
+      role,
+      schoolId,
+      phone,
+      age: age ? parseInt(age) : undefined,
+      birthday: birthday ? new Date(birthday) : undefined,
+      address: {
+        province: 'Quirino',
+        municipality: municipality || 'Aglipay'
+      }
+    });
     res.json({ success: true, user: { ...user.toObject(), password: undefined } });
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
@@ -221,9 +250,25 @@ app.get('/api/me', auth, async (req, res) => {
 
 // Update user
 app.put('/api/users/:id', auth, async (req, res) => {
-  const { name, email, phone, address } = req.body;
+  const { name, email, phone, age, birthday, address } = req.body;
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { name, email, phone, address }, { new: true }).select('-password');
+    // Validate municipality if provided
+    const validMunicipalities = ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'];
+    if (address?.municipality && !validMunicipalities.includes(address.municipality)) {
+      return res.status(400).json({ success: false, error: 'Invalid municipality' });
+    }
+
+    const updates = { name, email, phone };
+    if (age !== undefined) updates.age = parseInt(age);
+    if (birthday !== undefined) updates.birthday = new Date(birthday);
+    if (address?.municipality) {
+      updates.address = {
+        province: 'Quirino',
+        municipality: address.municipality
+      };
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password');
     res.json({ success: true, user });
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
@@ -254,8 +299,13 @@ app.get('/api/teachers', auth, async (req, res) => {
 
 // Add teacher
 app.post('/api/teachers', auth, async (req, res) => {
-  const { name, email, password, schoolId, phone, address } = req.body;
+  const { name, email, password, schoolId, phone, age, birthday, address } = req.body;
   try {
+    const validMunicipalities = ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'];
+    if (address?.municipality && !validMunicipalities.includes(address.municipality)) {
+      return res.status(400).json({ success: false, error: 'Invalid municipality' });
+    }
+
     const hash = await bcrypt.hash(password, 10);
     const teacher = await User.create({
       name,
@@ -264,7 +314,12 @@ app.post('/api/teachers', auth, async (req, res) => {
       role: 'teacher',
       schoolId,
       phone,
-      address
+      age: age ? parseInt(age) : undefined,
+      birthday: birthday ? new Date(birthday) : undefined,
+      address: {
+        province: 'Quirino',
+        municipality: address?.municipality || 'Aglipay'
+      }
     });
     res.json({ success: true, teacher: { ...teacher.toObject(), password: undefined } });
   } catch (e) {
@@ -274,11 +329,26 @@ app.post('/api/teachers', auth, async (req, res) => {
 
 // Update teacher
 app.put('/api/teachers/:id', auth, async (req, res) => {
-  const { name, email, schoolId, phone, address } = req.body;
+  const { name, email, schoolId, phone, age, birthday, address } = req.body;
   try {
+    const validMunicipalities = ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'];
+    if (address?.municipality && !validMunicipalities.includes(address.municipality)) {
+      return res.status(400).json({ success: false, error: 'Invalid municipality' });
+    }
+
+    const updates = { name, email, schoolId, phone };
+    if (age !== undefined) updates.age = parseInt(age);
+    if (birthday !== undefined) updates.birthday = new Date(birthday);
+    if (address?.municipality) {
+      updates.address = {
+        province: 'Quirino',
+        municipality: address.municipality
+      };
+    }
+
     const teacher = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, schoolId, phone, address },
+      updates,
       { new: true }
     ).select('-password');
     res.json({ success: true, teacher });
@@ -727,6 +797,85 @@ app.put('/api/change-requests/:id/reject', auth, async (req, res) => {
     res.json({ success: true, request });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to reject request', details: err.message });
+  }
+});
+
+// ===== ANALYTICS ENDPOINTS =====
+
+// Get analytics data (users per municipality, age range, book borrowed, municipality borrowing)
+app.get('/api/analytics', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || (user.role !== 'admin' && user.role !== 'super-admin' && user.role !== 'teacher')) {
+      return res.status(403).json({ success: false, error: 'Only admins and teachers can access analytics' });
+    }
+
+    // 1. Users per municipality
+    const usersByMunicipality = await User.aggregate([
+      { $match: { role: { $in: ['student', 'teacher', 'admin'] } } },
+      { $group: { _id: '$address.municipality', count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // 2. Age range distribution (group by age brackets: <15, 15-20, 21-30, 31-40, >40)
+    const ageDistribution = await User.aggregate([
+      { $match: { age: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $lt: ['$age', 15] },
+              '<15',
+              { $cond: [{ $lt: ['$age', 21] }, '15-20', { $cond: [{ $lt: ['$age', 31] }, '21-30', { $cond: [{ $lt: ['$age', 41] }, '31-40', '>40'] }] }] }
+            ]
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // 3. Most borrowed books
+    const mostBorrowedBooks = await BorrowRecord.aggregate([
+      { $group: { _id: '$bookId', totalBorrows: { $sum: 1 } } },
+      { $sort: { totalBorrows: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'books',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'bookInfo'
+        }
+      }
+    ]);
+
+    // 4. Most active municipality for borrowing
+    const mostActiveMunicipality = await BorrowRecord.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'studentId',
+          foreignField: '_id',
+          as: 'studentInfo'
+        }
+      },
+      { $unwind: '$studentInfo' },
+      { $group: { _id: '$studentInfo.address.municipality', totalBorrows: { $sum: 1 } } },
+      { $sort: { totalBorrows: -1 } }
+    ]);
+
+    res.json({
+      success: true,
+      analytics: {
+        usersByMunicipality,
+        ageDistribution,
+        mostBorrowedBooks,
+        mostActiveMunicipality
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch analytics', details: err.message });
   }
 });
 

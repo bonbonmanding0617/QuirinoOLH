@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - QOLH</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analytics-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .chart-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .chart-canvas-container {
+            position: relative;
+            height: 300px;
+        }
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav style="background: #2c3e50; padding: 15px; color: white;">
+        <h2>Analytics Dashboard</h2>
+        <small>Users, Age Distribution, Books & Municipalities</small>
+    </nav>
+
+    <div class="analytics-container">
+        <div id="loading" class="loading">Loading analytics data...</div>
+        <div id="error" class="error" style="display:none;"></div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>Users per Municipality</h3>
+                <div class="chart-canvas-container">
+                    <canvas id="municipalityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Age Range Distribution</h3>
+                <div class="chart-canvas-container">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Top 10 Most Borrowed Books</h3>
+                <div class="chart-canvas-container">
+                    <canvas id="booksChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Most Active Municipalities (Borrowing)</h3>
+                <div class="chart-canvas-container">
+                    <canvas id="municipalityBorrowChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+
+        async function loadAnalytics() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/pages/admin-login.html';
+                    return;
+                }
+
+                const response = await axios.get('http://localhost:3001/api/analytics', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (!response.data.success) {
+                    throw new Error(response.data.error);
+                }
+
+                const analytics = response.data.analytics;
+                document.getElementById('loading').style.display = 'none';
+
+                // Chart 1: Users by Municipality
+                const municipalityLabels = analytics.usersByMunicipality.map(item => item._id || 'Unknown');
+                const municipalityCounts = analytics.usersByMunicipality.map(item => item.count);
+
+                const ctx1 = document.getElementById('municipalityChart').getContext('2d');
+                charts.municipality = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: municipalityLabels,
+                        datasets: [{
+                            label: 'Number of Users',
+                            data: municipalityCounts,
+                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 2: Age Distribution
+                const ageLabels = analytics.ageDistribution.map(item => item._id);
+                const ageCounts = analytics.ageDistribution.map(item => item.count);
+
+                const ctx2 = document.getElementById('ageChart').getContext('2d');
+                charts.age = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ageLabels,
+                        datasets: [{
+                            data: ageCounts,
+                            backgroundColor: [
+                                'rgba(231, 76, 60, 0.6)',
+                                'rgba(243, 156, 18, 0.6)',
+                                'rgba(46, 204, 113, 0.6)',
+                                'rgba(52, 152, 219, 0.6)',
+                                'rgba(155, 89, 182, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // Chart 3: Most Borrowed Books
+                const bookLabels = analytics.mostBorrowedBooks
+                    .map(item => item.bookInfo && item.bookInfo[0] ? item.bookInfo[0].title : 'Unknown')
+                    .slice(0, 10);
+                const bookCounts = analytics.mostBorrowedBooks
+                    .map(item => item.totalBorrows)
+                    .slice(0, 10);
+
+                const ctx3 = document.getElementById('booksChart').getContext('2d');
+                charts.books = new Chart(ctx3, {
+                    type: 'horizontalBar' in Chart.defaults.chart ? 'bar' : 'bar',
+                    data: {
+                        labels: bookLabels,
+                        datasets: [{
+                            label: 'Number of Borrows',
+                            data: bookCounts,
+                            backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+
+                // Chart 4: Most Active Municipality (Borrowing)
+                const borrowMunicipalityLabels = analytics.mostActiveMunicipality
+                    .map(item => item._id || 'Unknown');
+                const borrowMunicipalityCounts = analytics.mostActiveMunicipality
+                    .map(item => item.totalBorrows);
+
+                const ctx4 = document.getElementById('municipalityBorrowChart').getContext('2d');
+                charts.municipalityBorrow = new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: borrowMunicipalityLabels,
+                        datasets: [{
+                            label: 'Total Borrows',
+                            data: borrowMunicipalityCounts,
+                            backgroundColor: 'rgba(155, 89, 182, 0.6)',
+                            borderColor: 'rgba(155, 89, 182, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('loading').style.display = 'none';
+                const errorDiv = document.getElementById('error');
+                errorDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Load on page load
+        window.addEventListener('DOMContentLoaded', loadAnalytics);
+    </script>
+</body>
+</html>
