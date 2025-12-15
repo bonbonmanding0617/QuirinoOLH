@@ -22,10 +22,43 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Configure multer for profile picture uploads (5MB max)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads', 'profiles');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only JPEG, PNG, and GIF images are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
 
 // MongoDB connection
 // Read from environment variable (set in .env or deployment platform)
@@ -91,6 +124,7 @@ const userSchema = new mongoose.Schema({
   },
   schoolId: String,
   phone: String,
+  profilePicture: String, // URL or file path to profile picture
   createdAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
@@ -286,6 +320,25 @@ app.delete('/api/students/:id', auth, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+// Upload profile picture
+app.post('/api/users/:id/upload-profile-pic', auth, upload.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file provided' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { profilePicture: `/uploads/profiles/${req.file.filename}` },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, user, message: 'Profile picture uploaded successfully' });
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
   }
@@ -876,6 +929,78 @@ app.get('/api/analytics', auth, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch analytics', details: err.message });
+  }
+});
+
+// ===== SUPER ADMIN ENDPOINTS =====
+
+// Get all users (super-admin only)
+app.get('/api/admin/users', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Only super-admin can access this' });
+    }
+
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch users', details: err.message });
+  }
+});
+
+// Edit any user (super-admin only)
+app.put('/api/admin/users/:id', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (!admin || admin.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Only super-admin can edit users' });
+    }
+
+    const { name, email, role, age, birthday, address, phone, schoolId } = req.body;
+
+    const validMunicipalities = ['Aglipay', 'Cabarroguis', 'Diffun', 'Maddela', 'Nagtipunan', 'Saguday'];
+    if (address?.municipality && !validMunicipalities.includes(address.municipality)) {
+      return res.status(400).json({ success: false, error: 'Invalid municipality' });
+    }
+
+    const updates = { name, email, role, phone, schoolId };
+    if (age !== undefined) updates.age = parseInt(age);
+    if (birthday !== undefined) updates.birthday = new Date(birthday);
+    if (address?.municipality) {
+      updates.address = {
+        province: 'Quirino',
+        municipality: address.municipality
+      };
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password');
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update user', details: err.message });
+  }
+});
+
+// Delete any user (super-admin only)
+app.delete('/api/admin/users/:id', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (!admin || admin.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Only super-admin can delete users' });
+    }
+
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to delete user', details: err.message });
   }
 });
 

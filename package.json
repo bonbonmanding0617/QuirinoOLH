@@ -34,6 +34,7 @@
     "minimist": "^1.2.8",
     "mongodb": "^4.17.2",
     "mongoose": "^7.0.0",
+    "multer": "^2.0.2",
     "pm2": "^6.0.14"
   },
   "devDependencies": {
