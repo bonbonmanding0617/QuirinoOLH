@@ -299,7 +299,7 @@
         function loadProfile() {
             const token = localStorage.getItem('token');
             
-            axios.get('http://localhost:3000/api/me', {
+            axios.get('http://localhost:3001/api/me', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -329,7 +329,7 @@
                 address: document.getElementById('profile-address').value
             };
 
-            axios.put(`http://localhost:3000/api/users/${currentUser._id}`, profileData, {
+            axios.put(`http://localhost:3001/api/users/${currentUser._id}`, profileData, {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {

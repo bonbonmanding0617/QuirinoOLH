@@ -6,7 +6,7 @@
 const CONFIG = {
     // API Configuration
     API: {
-        BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3000/api',
+        BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
         TIMEOUT: 30000, // 30 seconds
         RETRY_COUNT: 3,
         RETRY_DELAY: 1000

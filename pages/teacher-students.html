@@ -218,7 +218,7 @@
         function loadStudents() {
             const token = localStorage.getItem('token');
             
-            axios.get('http://localhost:3000/api/students', {
+            axios.get('http://localhost:3001/api/students', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {

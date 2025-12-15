@@ -406,7 +406,7 @@
 
         // Load all books
         function loadBooks() {
-            axios.get('http://localhost:3000/api/books')
+            axios.get('http://localhost:3001/api/books')
                 .then(res => {
                     allBooks = res.data.books;
                     displayBooks(allBooks);
@@ -506,7 +506,7 @@
             }
 
             const token = localStorage.getItem('token');
-            axios.post('http://localhost:3000/api/borrow', {
+            axios.post('http://localhost:3001/api/borrow', {
                 bookId: bookId,
                 borrowDays: 14
             }, {
@@ -528,7 +528,7 @@
         function loadBorrowedBooks() {
             const token = localStorage.getItem('token');
             
-            axios.get('http://localhost:3000/api/borrow/student/' + currentUser._id, {
+            axios.get('http://localhost:3001/api/borrow/student/' + currentUser._id, {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -597,7 +597,7 @@
             if (confirm('Are you sure you want to return this book?')) {
                 const token = localStorage.getItem('token');
                 
-                axios.put('http://localhost:3000/api/borrow/' + recordId + '/return', {}, {
+                axios.put('http://localhost:3001/api/borrow/' + recordId + '/return', {}, {
                     headers: { Authorization: 'Bearer ' + token }
                 })
                     .then(res => {
@@ -614,7 +614,7 @@
 
         // Load eBooks
         function loadEbooks() {
-            axios.get('http://localhost:3000/api/ebooks')
+            axios.get('http://localhost:3001/api/ebooks')
                 .then(res => {
                     allEbooks = res.data.ebooks;
                     displayEbooks(allEbooks);
@@ -679,7 +679,7 @@
             if (!ebook) return;
 
             // Increment download count on backend
-            axios.put('http://localhost:3000/api/ebooks/' + ebookId + '/download', {}, {
+            axios.put('http://localhost:3001/api/ebooks/' + ebookId + '/download', {}, {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -710,7 +710,7 @@
                 return;
             }
 
-            axios.get('http://localhost:3000/api/me', {
+            axios.get('http://localhost:3001/api/me', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -743,7 +743,7 @@
                 address: document.getElementById('profile-address').value
             };
 
-            axios.put('http://localhost:3000/api/users/' + currentUser._id, updates, {
+            axios.put('http://localhost:3001/api/users/' + currentUser._id, updates, {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {

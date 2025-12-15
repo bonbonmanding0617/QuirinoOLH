@@ -221,7 +221,7 @@
 
         // Load books
         function loadBooks() {
-            axios.get('http://localhost:3000/api/books')
+            axios.get('http://localhost:3001/api/books')
                 .then(res => {
                     allBooks = res.data.books;
                     displayBooks(allBooks);

@@ -3,7 +3,7 @@
  * Handles all HTTP requests to the backend with error handling and token management
  */
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 /**
  * Get authorization headers with token

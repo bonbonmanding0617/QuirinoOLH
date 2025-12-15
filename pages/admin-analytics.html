@@ -320,7 +320,7 @@
             const token = localStorage.getItem('token');
             
             // Load borrow records for statistics
-            axios.get('http://localhost:3000/api/borrow', {
+            axios.get('http://localhost:3001/api/borrow', {
                 headers: { Authorization: 'Bearer ' + token }
             })
                 .then(res => {
@@ -375,7 +375,7 @@
                     initStatusChart(totalReturns, activeBorrows, overdueBorrows);
                     
                     // Load books to get category data
-                    return axios.get('http://localhost:3000/api/books', {
+                    return axios.get('http://localhost:3001/api/books', {
                         headers: { Authorization: 'Bearer ' + token }
                     });
                 })
